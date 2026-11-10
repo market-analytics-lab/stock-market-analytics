@@ -1,57 +1,46 @@
-# Stock Market Analytics
+# SPX Market Analytics
 
-An interactive, GitHub Pages–ready market-analysis site. The initial release focuses on the **S&P 500 index (SPX)**.
+An interactive S&P 500 **index** chart, published as a GitHub Pages dashboard. The embedded chart uses historical **SPX** values — **not Apple (AAPL), SPY, or a CFD proxy**.
 
-## SPX dashboard
+![SPX historical S&P 500 index close chart](spx-preview.svg)
 
-- Interactive **SP:SPX** candlestick chart powered by TradingView's embeddable Advanced Chart.
-- One-click candle intervals: **1m, 5m, 15m, 1H, 4H, 1D, 1W, and 1M**.
-- TradingView chart tools for zooming, panning, drawing, comparing symbols, and technical studies (as available in the embedded widget).
-- Responsive layout, light/dark theme switch, and fullscreen when supported.
-- Direct link to open the full chart on TradingView.
+**[Open the interactive SPX viewer](https://market-analytics-lab.github.io/stock-market-analytics/)**
 
-This version is **charting only**: there is no independent SPX data feed, prediction model, backtester, or trade recommendation engine yet.
+## What's in the viewer
 
-## Publish with GitHub Pages
+- Actual S&P 500 index (SPX) historical closing prices, highs, and lows.
+- Selectable date ranges: **1M, 3M, 6M, YTD, 1Y, and MAX**.
+- Hover over the plotted line for a date and its close/high/low.
+- Highest and lowest index levels in the selected historical range.
+- Dark/light theme and fullscreen mode.
 
-The site uses plain HTML, CSS, and JavaScript — **no build, dependencies, API keys, or backend required**.
+**Market data as of November 9, 2026.** The embedded chart is a **static historical snapshot**, not a live market feed; the date is displayed on the page. Daily observations are provided for approximately one year, with coarser older observations for the MAX view. The one-year preview image above is also static.
 
-1. In this repository, open **Settings → Pages**.
-2. Under **Build and deployment**, choose **Deploy from a branch**.
-3. Choose branch **main** and folder **/(root)**, then **Save**.
-4. After GitHub finishes publishing, your URL should be:
-   **https://market-analytics-lab.github.io/stock-market-analytics/**
-
-You can also preview locally using a basic static file server, such as:
-
-```sh
-python -m http.server 8000
-```
-
-Then visit http://localhost:8000.
+The original TradingView widget was removed because its `SP:SPX` symbol could not be displayed in a third-party embedded chart (the widget reported *“This symbol is only available on TradingView”*). You can still use the [full SPX TradingView chart](https://www.tradingview.com/chart/?symbol=SP%3ASPX) for live/intraday charting.
 
 ## Files
 
-| Path | Purpose |
+| File | Purpose |
 | --- | --- |
-| `index.html` | Accessible page structure and TradingView widget |
-| `styles.css` | Responsive website design |
-| `app.js` | Candle interval, theme, and fullscreen controls |
+| `index.html` | Dashboard layout and chart controls |
+| `styles.css` | Site layout and responsive theme |
+| `chart.css` | Native SPX chart styles |
+| `app.js` | Theme and fullscreen controls |
+| `chart.js` | SVG plotting, range selection, tooltip, and range extrema |
+| `spx-data.js` | Timestamped S&P 500 index historical observations |
+| `spx-preview.svg` | Repository README chart preview |
 
-### Market-data notes
+## Hosting
 
-The embedded TradingView widget retrieves its own market data. **Availability, historical depth, quote delays, and intraday permissions are determined by TradingView and its data providers.** Some intervals may be unavailable for certain users/markets. The widget requires internet access, and some privacy settings, blockers, or networks may block third-party scripts.
+The website is available at **https://market-analytics-lab.github.io/stock-market-analytics/** and uses static HTML, CSS, and JavaScript. No build, API key, or backend is required.
 
-The chart source and TradingView attribution are intentionally visible. This project is not affiliated with TradingView or S&P Dow Jones Indices.
+If GitHub Pages needs to be configured again: go to **Settings → Pages → Deploy from a branch**, select `main` and `/(root)`, then save.
 
-**Disclaimer:** Market analytics are for education and research, not personalized financial advice. SPX is an index and cannot be purchased directly.
+You can also use `python -m http.server 8000` to preview the website locally.
 
-## Possible next steps
+This repository currently presents historical data only. It does **not** yet implement predictive models, backtesting, probability estimates, or trading signals.
 
-- Add an independently sourced, date-stamped OHLC historical data layer.
-- Backtest technical signals against historical SPX data.
-- Add probabilistic forecasts, calibration plots, and out-of-sample verification.
-- Add a market breadth and volatility dashboard alongside SPX.
+**Disclaimer:** This is educational market research, not a trading recommendation. SPX is an index and cannot be purchased directly.
 
 ## License
 
