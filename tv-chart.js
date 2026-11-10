@@ -163,7 +163,9 @@
     deltaElement.textContent = `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%`;
     deltaElement.classList.toggle("negative", delta < 0);
     const requested = { "1D": "1 day", "5D": "5 days", "1M": "1 month", "3M": "3 months", "6M": "6 months", "1Y": "1 year", "ALL": "all available" }[range];
-    document.getElementById("coverage-note").textContent = `${selectedBars.length} real ${interval} SPX bars available · Showing ${count} bars for ${requested} · As of ${source.asOf} (historical, not live)`;
+    const intervalName = { "1": "1-minute", "5": "5-minute", "15": "15-minute", "60": "hourly", "240": "4-hour", "1D": "daily", "1W": "weekly", "1M": "monthly" }[interval];
+    const aggregation = ["15", "240", "1W", "1M"].includes(interval) ? " · Aggregated from actual OHLC" : "";
+    document.getElementById("coverage-note").textContent = `${selectedBars.length} ${intervalName} SPX bars · Showing ${count} bars for ${requested}${aggregation} · As of ${source.asOf} (historical, not live)`;
     setOHLC(after, dateOf(after.time));
   }
 
