@@ -4,10 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark light">
-  <meta name="description" content="Explore S&P 500 (SPX) candlesticks, multiple timeframes, and professional charting tools in an interactive market dashboard.">
-  <title>SPX Chart | Market Analytics</title>
+  <meta name="description" content="Explore actual S&P 500 (SPX) index highs, lows, and historical closing prices in an interactive market dashboard.">
+  <title>SPX Historical Chart | Market Analytics</title>
   <link rel="stylesheet" href="./styles.css">
-  <script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-advanced-chart.js"></script>
+  <link rel="stylesheet" href="./chart.css">
+  <script src="./spx-data.js" defer></script>
+  <script src="./chart.js" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -36,7 +38,7 @@
         <div class="intro-content">
           <p class="eyebrow"><span class="pulse" aria-hidden="true"></span> INTERACTIVE MARKET CHART</p>
           <h1 id="page-title">The market, in <span>focus.</span></h1>
-          <p class="intro-description">Explore price action on the S&amp;P 500 with candlestick charts, flexible intervals, technical indicators, and drawing tools.</p>
+          <p class="intro-description">Explore actual S&amp;P 500 index prices, including historical closing levels and period highs and lows. No Apple stock or substitute index instruments.</p>
         </div>
         <div class="intro-aside">
           <span class="overline">TRACKING</span>
@@ -54,7 +56,7 @@
                 <h2 id="chart-title">SPX</h2>
                 <span class="type-badge">INDEX</span>
               </div>
-              <p>S&amp;P 500 · <span id="interval-description">1 day candles</span></p>
+              <p>S&amp;P 500 · <span id="interval-description">1Y historical view</span></p>
             </div>
           </div>
           <div class="chart-actions">
@@ -74,38 +76,26 @@
         </div>
 
         <div class="timeframe-toolbar">
-          <div class="timeframe-label">CANDLE INTERVAL <span class="label-hint">Select a timeframe</span></div>
-          <div class="interval-buttons" role="group" aria-label="Candlestick timeframe">
-            <button type="button" class="interval-button" data-interval="1" data-label="1 minute" aria-pressed="false">1m</button>
-            <button type="button" class="interval-button" data-interval="5" data-label="5 minute" aria-pressed="false">5m</button>
-            <button type="button" class="interval-button" data-interval="15" data-label="15 minute" aria-pressed="false">15m</button>
-            <button type="button" class="interval-button" data-interval="60" data-label="1 hour" aria-pressed="false">1H</button>
-            <button type="button" class="interval-button" data-interval="240" data-label="4 hour" aria-pressed="false">4H</button>
-            <button type="button" class="interval-button active" data-interval="1D" data-label="1 day" aria-pressed="true">1D</button>
-            <button type="button" class="interval-button" data-interval="1W" data-label="1 week" aria-pressed="false">1W</button>
-            <button type="button" class="interval-button" data-interval="1M" data-label="1 month" aria-pressed="false">1M</button>
+          <div class="timeframe-label">HISTORICAL RANGE <span class="label-hint">Select a period</span></div>
+          <div class="interval-buttons" role="group" aria-label="Historical SPX range">
+            <button type="button" class="interval-button" data-range="1M" aria-pressed="false">1M</button>
+            <button type="button" class="interval-button" data-range="3M" aria-pressed="false">3M</button>
+            <button type="button" class="interval-button" data-range="6M" aria-pressed="false">6M</button>
+            <button type="button" class="interval-button" data-range="YTD" aria-pressed="false">YTD</button>
+            <button type="button" class="interval-button active" data-range="1Y" aria-pressed="true">1Y</button>
+            <button type="button" class="interval-button" data-range="MAX" aria-pressed="false">MAX</button>
           </div>
-          <span class="toolbar-caption">Zoom and scroll inside the chart to explore history</span>
+          <span class="toolbar-caption">Hover over prices for date and daily high/low values</span>
         </div>
 
         <div class="chart-window">
-          <tv-advanced-chart
-            id="spx-chart"
-            symbol="SP:SPX"
-            interval="1D"
-            theme="dark"
-            aria-label="Interactive S&P 500 candlestick chart powered by TradingView"
-          >
-            <div class="chart-loading">
-              <span class="loader" aria-hidden="true"></span>
-              <strong>Loading interactive chart…</strong>
-              <span>Market data is provided by TradingView. If the chart does not load, <a href="https://www.tradingview.com/chart/?symbol=SP%3ASPX" target="_blank" rel="noopener noreferrer">open SPX in TradingView</a>.</span>
-            </div>
-          </tv-advanced-chart>
+          <div id="spx-chart" class="spx-native-chart" role="group" aria-label="S&P 500 index historical chart">
+            <div class="chart-loading">Loading SPX index history…</div>
+          </div>
         </div>
 
         <div class="chart-footer">
-          <span><span class="source-dot" aria-hidden="true"></span> Chart &amp; market data provided by TradingView; quotes may be delayed.</span>
+          <span><span class="source-dot" aria-hidden="true"></span> Historical S&amp;P 500 index snapshot; this embedded chart is not a live quote.</span>
           <a href="https://www.tradingview.com/chart/?symbol=SP%3ASPX" target="_blank" rel="noopener noreferrer">View full chart ↗</a>
         </div>
       </section>
@@ -113,18 +103,18 @@
       <section class="feature-grid" id="about" aria-label="Charting guide">
         <article class="feature-card">
           <div class="feature-number">01 / PRICE ACTION</div>
-          <h3>Choose a timeframe</h3>
-          <p>Switch between minute, hourly, daily, weekly, and monthly candles above. Each candle represents that interval’s open, high, low, and close.</p>
+          <h3>Choose a time range</h3>
+          <p>Choose 1M, 3M, 6M, YTD, 1Y or MAX. The line tracks actual SPX closing values for the available history.</p>
         </article>
         <article class="feature-card">
           <div class="feature-number">02 / TECHNICAL STUDIES</div>
-          <h3>Build your analysis</h3>
-          <p>Use the chart’s built-in toolbar to add moving averages, RSI, MACD, and other indicators, or annotate patterns with drawing tools.</p>
+          <h3>Inspect highs and lows</h3>
+          <p>See historical period highs and lows directly on the graph. Hover over the line to inspect dates and prices.</p>
         </article>
         <article class="feature-card">
           <div class="feature-number">03 / HISTORICAL CONTEXT</div>
           <h3>Zoom into the past</h3>
-          <p>Pan, scroll, zoom, and inspect individual candles on the chart. Chart data coverage and intraday interval availability depend on TradingView.</p>
+          <p>The embedded chart is a dated SPX historical snapshot, with daily observations for the past year and coarser older data. Use the external TradingView link for intraday and live charting.</p>
         </article>
       </section>
     </main>
