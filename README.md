@@ -45,6 +45,7 @@ The data is a **historical snapshot, not live streaming or licensed real-time SP
 | `app.js` | Dark/light and fullscreen |
 | `tv-chart.js` | Candlesticks, timeframe aggregation, moving averages and interaction |
 | `spx-ohlc-data.js` | Historical daily and intraday SPX OHLC data snapshot |
+| `build_ohlc.py` | Rebuild the OHLC data from the public ^GSPC archive (`python build_ohlc.py`) |
 | `spx-preview.png` | README historical close preview |
 
 The older `chart.js` and `spx-data.js` files remain in the repository as an earlier chart version, but they are no longer used by the live viewer.
