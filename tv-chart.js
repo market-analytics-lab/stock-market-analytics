@@ -5,6 +5,7 @@
  */
 (() => {
   const source = window.SPX_OHLC;
+  const historySource = window.SPX_HISTORY;
   const library = window.LightweightCharts;
   const wrapper = document.getElementById("spx-chart");
   const surface = document.getElementById("candle-surface");
@@ -14,11 +15,14 @@
   const averageButtons = [...document.querySelectorAll("[data-average]")];
   const format = new Intl.NumberFormat("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-  if (!source || !library || !wrapper || !surface) {
+  if (!source || !historySource || !library || !wrapper || !surface) {
     if (wrapper) wrapper.textContent = "SPX chart library or historical data did not load. Use the full TradingView link below.";
     return;
   }
   if (source.symbol !== "SPX") throw new Error("SPX data source validation failed");
+  if (historySource.symbol !== "SPX" || historySource.monthly[0][0] !== "1871-01-01") {
+    throw new Error("Historical S&P Composite data validation failed");
+  }
 
   const price = (value) => format.format(value);
   const dateOf = (time) => typeof time === "number"
@@ -76,10 +80,13 @@
     "1W": aggregate(day, (bar) => weekStart(bar.time), (_, key) => key),
     "1M": aggregate(day, (bar) => bar.time.slice(0, 7), (_, key) => `${key}-01`),
   };
+  const historyBars = historySource.monthly.map(([time, value]) => ({ time, value }));
+  const longRanges = new Set(["5Y", "10Y", "25Y", "50Y", "100Y", "ALL"]);
 
   let interval = "1D";
   let range = "6M";
   let mode = "candles";
+  let logScale = false;
   let selectedBars = buckets[interval];
   let lookups = new Map();
   const averages = { 20: false, 50: false };
@@ -107,6 +114,7 @@
     priceLineVisible: true,
   });
   const line = chart.addSeries(library.LineSeries, { color: "#62d9ba", lineWidth: 2, visible: false, priceLineVisible: false });
+  const historyLine = chart.addSeries(library.LineSeries, { color: "#62d9ba", lineWidth: 2, visible: false, priceLineVisible: true, title: "Historical monthly S&P Composite" });
   const sma20 = chart.addSeries(library.LineSeries, { color: "#f2b45e", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, visible: false });
   const sma50 = chart.addSeries(library.LineSeries, { color: "#83a7ff", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, visible: false });
 
@@ -137,10 +145,25 @@
     document.getElementById("ohlc-close").classList.toggle("down", !rising);
   }
 
+  function setHistoryReadout(bar) {
+    if (!bar) return;
+    document.getElementById("history-date").textContent = dateOf(bar.time);
+    document.getElementById("history-level").textContent = price(bar.value);
+    document.getElementById("history-partial").textContent = bar.time === "2026-11-01" ? "(month to date)" : "";
+  }
+
+  function changeLogScale(active) {
+    logScale = active;
+    chart.priceScale("right").applyOptions({ mode: active ? library.PriceScaleMode.Logarithmic : library.PriceScaleMode.Normal });
+    const button = document.getElementById("log-scale");
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
+  }
+
   function dataForRange() {
     if (!selectedBars.length) return { first: 0, values: [] };
     const last = epoch(selectedBars.at(-1).time);
-    const requestedDays = { "1D": 1, "5D": 5, "1M": 31, "3M": 93, "6M": 186, "1Y": 366, "ALL": Infinity };
+    const requestedDays = { "1D": 1, "5D": 5, "1M": 31, "3M": 93, "6M": 186, "1Y": 366, "5Y": 1827, "10Y": 3653, "25Y": 9132, "50Y": 18263, "100Y": 36525, "ALL": Infinity };
     const earliest = last - requestedDays[range] * 86400;
     let first = selectedBars.findIndex((bar) => epoch(bar.time) >= earliest);
     if (first < 0) first = 0;
@@ -149,20 +172,27 @@
 
   function applyRange() {
     const { first, values } = dataForRange();
+    if (!values.length) return;
     const count = Math.max(values.length, 1);
     chart.timeScale().setVisibleLogicalRange({ from: Math.max(first - .5, -.5), to: selectedBars.length - 1 + Math.max(1.5, count * .03) });
-    const high = Math.max(...values.map((bar) => bar.high));
-    const low = Math.min(...values.map((bar) => bar.low));
+    const historical = interval === "HIST";
+    const high = Math.max(...values.map((bar) => historical ? bar.value : bar.high));
+    const low = Math.min(...values.map((bar) => historical ? bar.value : bar.low));
     const before = values[0];
     const after = values.at(-1);
-    document.getElementById("spx-last").textContent = price(after.close);
+    document.getElementById("spx-last").textContent = price(historical ? after.value : after.close);
     document.getElementById("spx-high").textContent = price(high);
     document.getElementById("spx-low").textContent = price(low);
-    const delta = 100 * (after.close / before.open - 1);
+    const delta = 100 * (historical ? (after.value / before.value - 1) : (after.close / before.open - 1));
     const deltaElement = document.getElementById("spx-change");
     deltaElement.textContent = `${delta >= 0 ? "+" : ""}${delta.toFixed(2)}%`;
     deltaElement.classList.toggle("negative", delta < 0);
-    const requested = { "1D": "1 day", "5D": "5 days", "1M": "1 month", "3M": "3 months", "6M": "6 months", "1Y": "1 year", "ALL": "all available" }[range];
+    const requested = { "1D": "1 day", "5D": "5 days", "1M": "1 month", "3M": "3 months", "6M": "6 months", "1Y": "1 year", "5Y": "5 years", "10Y": "10 years", "25Y": "25 years", "50Y": "50 years", "100Y": "100 years", "ALL": "all available" }[range];
+    if (historical) {
+      document.getElementById("coverage-note").textContent = `${historyBars.length} monthly S&P Composite / S&P 500 levels since 1871 · Showing ${count} months for ${requested} · Nov 2026 is provisional · NOT historical OHLC`;
+      setHistoryReadout(after);
+      return;
+    }
     const intervalName = { "1": "1-minute", "5": "5-minute", "15": "15-minute", "60": "hourly", "240": "4-hour", "1D": "daily", "1W": "weekly", "1M": "monthly" }[interval];
     const aggregation = ["15", "240", "1W", "1M"].includes(interval) ? " · Aggregated from actual OHLC" : "";
     document.getElementById("coverage-note").textContent = `${selectedBars.length} ${intervalName} SPX bars · Showing ${count} bars for ${requested}${aggregation} · As of ${source.asOf} (historical, not live)`;
@@ -173,6 +203,20 @@
     if (!buckets[next]?.length) return;
     interval = next;
     selectedBars = buckets[interval];
+    wrapper.classList.remove("history-mode");
+    document.getElementById("history-note").hidden = true;
+    document.getElementById("history-readout").hidden = true;
+    document.getElementById("ohlc-strip").hidden = false;
+    document.getElementById("spx-last-label").textContent = "LAST CLOSE";
+    document.getElementById("spx-high-label").textContent = "RANGE HIGH";
+    document.getElementById("spx-low-label").textContent = "RANGE LOW";
+    historyLine.applyOptions({ visible: false });
+    historyLine.setData([]);
+    candles.applyOptions({ visible: mode === "candles" });
+    line.applyOptions({ visible: mode === "line" });
+    sma20.applyOptions({ visible: averages[20] });
+    sma50.applyOptions({ visible: averages[50] });
+    changeLogScale(false);
     lookups = new Map(selectedBars.map((bar) => [timeKey(bar.time), bar]));
     candles.setData(selectedBars);
     line.setData(selectedBars.map((bar) => ({ time: bar.time, value: bar.close })));
@@ -180,26 +224,73 @@
     sma50.setData(simpleMovingAverage(selectedBars, 50));
     chart.timeScale().applyOptions({ timeVisible: !["1D", "1W", "1M"].includes(interval), secondsVisible: false });
     toggleButtons(intervalButtons, "interval", interval);
-    const defaults = { "1": "1D", "5": "5D", "15": "5D", "60": "1M", "240": "1M", "1D": "6M", "1W": "1Y", "1M": "ALL" };
+    const defaults = { "1": "1D", "5": "5D", "15": "5D", "60": "1M", "240": "1M", "1D": "6M", "1W": "1Y", "1M": "1Y" };
     range = defaults[interval];
     toggleButtons(rangeButtons, "range", range);
+    toggleButtons(modeButtons, "chartMode", mode);
     document.getElementById("interval-description").textContent = `${{ "1": "1 minute", "5": "5 minute", "15": "15 minute", "60": "1 hour", "240": "4 hour", "1D": "daily", "1W": "weekly", "1M": "monthly" }[interval]} candles`;
     applyRange();
   }
 
-  intervalButtons.forEach((button) => button.addEventListener("click", () => setInterval(button.dataset.interval)));
+  function showHistory(requestedRange = "ALL") {
+    interval = "HIST";
+    selectedBars = historyBars;
+    range = requestedRange;
+    lookups = new Map(historyBars.map((bar) => [timeKey(bar.time), bar]));
+    wrapper.classList.add("history-mode");
+    document.getElementById("history-note").hidden = false;
+    document.getElementById("history-readout").hidden = false;
+    document.getElementById("ohlc-strip").hidden = true;
+    document.getElementById("spx-last-label").textContent = "MONTHLY INDEX LEVEL";
+    document.getElementById("spx-high-label").textContent = "HIGHEST MONTHLY LEVEL";
+    document.getElementById("spx-low-label").textContent = "LOWEST MONTHLY LEVEL";
+    candles.applyOptions({ visible: false });
+    line.applyOptions({ visible: false });
+    sma20.applyOptions({ visible: false });
+    sma50.applyOptions({ visible: false });
+    candles.setData([]);
+    line.setData([]);
+    sma20.setData([]);
+    sma50.setData([]);
+    historyLine.setData(historyBars);
+    historyLine.applyOptions({ visible: true });
+    chart.timeScale().applyOptions({ timeVisible: false, secondsVisible: false });
+    changeLogScale(true);
+    toggleButtons(intervalButtons, "interval", "HIST");
+    toggleButtons(rangeButtons, "range", range);
+    toggleButtons(modeButtons, "chartMode", "line");
+    document.getElementById("interval-description").textContent = "monthly historical index levels (1871 onward)";
+    applyRange();
+  }
+
+  intervalButtons.forEach((button) => button.addEventListener("click", () => button.dataset.interval === "HIST" ? showHistory() : setInterval(button.dataset.interval)));
   rangeButtons.forEach((button) => button.addEventListener("click", () => {
-    range = button.dataset.range;
+    const next = button.dataset.range;
+    if (interval !== "HIST" && longRanges.has(next)) {
+      showHistory(next);
+      return;
+    }
+    range = next;
     toggleButtons(rangeButtons, "range", range);
     applyRange();
   }));
   modeButtons.forEach((button) => button.addEventListener("click", () => {
+    if (interval === "HIST") {
+      if (button.dataset.chartMode === "candles") {
+        mode = "candles";
+        setInterval("1D");
+      }
+      return;
+    }
     mode = button.dataset.chartMode;
     candles.applyOptions({ visible: mode === "candles" });
     line.applyOptions({ visible: mode === "line" });
     toggleButtons(modeButtons, "chartMode", mode);
   }));
   averageButtons.forEach((button) => button.addEventListener("click", () => {
+    if (interval === "HIST") {
+      setInterval("1D");
+    }
     const n = Number(button.dataset.average);
     averages[n] = !averages[n];
     (n === 20 ? sma20 : sma50).applyOptions({ visible: averages[n] });
@@ -209,8 +300,12 @@
 
   chart.subscribeCrosshairMove((param) => {
     const bar = param.time !== undefined ? lookups.get(timeKey(param.time)) : null;
-    setOHLC(bar || selectedBars.at(-1), dateOf(bar ? bar.time : selectedBars.at(-1).time));
+    const displayed = bar || selectedBars.at(-1);
+    if (interval === "HIST") setHistoryReadout(displayed);
+    else setOHLC(displayed, dateOf(displayed.time));
   });
+
+  document.getElementById("log-scale").addEventListener("click", () => changeLogScale(!logScale));
 
   document.getElementById("fit-chart").addEventListener("click", () => chart.timeScale().fitContent());
   document.getElementById("zoom-in").addEventListener("click", () => changeZoom(.7));
