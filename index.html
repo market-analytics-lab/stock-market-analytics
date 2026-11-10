@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark light">
+  <meta name="description" content="Explore S&P 500 (SPX) candlesticks, multiple timeframes, and professional charting tools in an interactive market dashboard.">
+  <title>SPX Chart | Market Analytics</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script type="module" src="https://widgets.tradingview-widget.com/w/en/tv-advanced-chart.js"></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <div class="site">
+    <header class="site-header">
+      <a class="brand" href="./" aria-label="Market Analytics home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none">
+            <path d="M5 23L12 17L17 20L26 8" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M20 8H26V14" stroke="currentColor" stroke-width="2.7" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span>MARKET<span class="brand-accent">ANALYTICS</span></span>
+      </a>
+      <nav class="main-nav" aria-label="Main navigation">
+        <a href="#chart" aria-current="page">SPX Chart</a>
+        <a href="#about">About the chart</a>
+      </nav>
+      <a class="header-link" href="https://www.tradingview.com/symbols/SPX/?exchange=SP" target="_blank" rel="noopener noreferrer">
+        Open TradingView <span aria-hidden="true">↗</span>
+      </a>
+    </header>
+
+    <main>
+      <section class="intro" aria-labelledby="page-title">
+        <div class="intro-content">
+          <p class="eyebrow"><span class="pulse" aria-hidden="true"></span> INTERACTIVE MARKET CHART</p>
+          <h1 id="page-title">The market, in <span>focus.</span></h1>
+          <p class="intro-description">Explore price action on the S&amp;P 500 with candlestick charts, flexible intervals, technical indicators, and drawing tools.</p>
+        </div>
+        <div class="intro-aside">
+          <span class="overline">TRACKING</span>
+          <strong>S&amp;P 500 Index</strong>
+          <span class="muted">TradingView symbol: SP:SPX</span>
+        </div>
+      </section>
+
+      <section class="chart-panel" id="chart" aria-labelledby="chart-title">
+        <div class="chart-header">
+          <div class="instrument">
+            <div class="instrument-icon">S<span>&amp;</span>P</div>
+            <div>
+              <div class="instrument-heading">
+                <h2 id="chart-title">SPX</h2>
+                <span class="type-badge">INDEX</span>
+              </div>
+              <p>S&amp;P 500 · <span id="interval-description">1 day candles</span></p>
+            </div>
+          </div>
+          <div class="chart-actions">
+            <button type="button" class="action-button" id="theme-toggle" aria-label="Switch to light theme" title="Switch theme">
+              <svg class="theme-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M20.985 12.486A9 9 0 0 1 11.514 3.015 9 9 0 1 0 20.985 12.486Z"/>
+              </svg>
+              <span>Theme</span>
+            </button>
+            <button type="button" class="action-button" id="fullscreen-toggle" aria-label="Enter chart fullscreen" title="Fullscreen chart">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M8 3H5a2 2 0 0 0-2 2v3M16 3h3a2 2 0 0 1 2 2v3M3 16v3a2 2 0 0 0 2 2h3M21 16v3a2 2 0 0 1-2 2h-3"/>
+              </svg>
+              <span>Expand</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="timeframe-toolbar">
+          <div class="timeframe-label">CANDLE INTERVAL <span class="label-hint">Select a timeframe</span></div>
+          <div class="interval-buttons" role="group" aria-label="Candlestick timeframe">
+            <button type="button" class="interval-button" data-interval="1" data-label="1 minute" aria-pressed="false">1m</button>
+            <button type="button" class="interval-button" data-interval="5" data-label="5 minute" aria-pressed="false">5m</button>
+            <button type="button" class="interval-button" data-interval="15" data-label="15 minute" aria-pressed="false">15m</button>
+            <button type="button" class="interval-button" data-interval="60" data-label="1 hour" aria-pressed="false">1H</button>
+            <button type="button" class="interval-button" data-interval="240" data-label="4 hour" aria-pressed="false">4H</button>
+            <button type="button" class="interval-button active" data-interval="1D" data-label="1 day" aria-pressed="true">1D</button>
+            <button type="button" class="interval-button" data-interval="1W" data-label="1 week" aria-pressed="false">1W</button>
+            <button type="button" class="interval-button" data-interval="1M" data-label="1 month" aria-pressed="false">1M</button>
+          </div>
+          <span class="toolbar-caption">Zoom and scroll inside the chart to explore history</span>
+        </div>
+
+        <div class="chart-window">
+          <tv-advanced-chart
+            id="spx-chart"
+            symbol="SP:SPX"
+            interval="1D"
+            theme="dark"
+            aria-label="Interactive S&P 500 candlestick chart powered by TradingView"
+          >
+            <div class="chart-loading">
+              <span class="loader" aria-hidden="true"></span>
+              <strong>Loading interactive chart…</strong>
+              <span>Market data is provided by TradingView. If the chart does not load, <a href="https://www.tradingview.com/chart/?symbol=SP%3ASPX" target="_blank" rel="noopener noreferrer">open SPX in TradingView</a>.</span>
+            </div>
+          </tv-advanced-chart>
+        </div>
+
+        <div class="chart-footer">
+          <span><span class="source-dot" aria-hidden="true"></span> Chart &amp; market data provided by TradingView; quotes may be delayed.</span>
+          <a href="https://www.tradingview.com/chart/?symbol=SP%3ASPX" target="_blank" rel="noopener noreferrer">View full chart ↗</a>
+        </div>
+      </section>
+
+      <section class="feature-grid" id="about" aria-label="Charting guide">
+        <article class="feature-card">
+          <div class="feature-number">01 / PRICE ACTION</div>
+          <h3>Choose a timeframe</h3>
+          <p>Switch between minute, hourly, daily, weekly, and monthly candles above. Each candle represents that interval’s open, high, low, and close.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-number">02 / TECHNICAL STUDIES</div>
+          <h3>Build your analysis</h3>
+          <p>Use the chart’s built-in toolbar to add moving averages, RSI, MACD, and other indicators, or annotate patterns with drawing tools.</p>
+        </article>
+        <article class="feature-card">
+          <div class="feature-number">03 / HISTORICAL CONTEXT</div>
+          <h3>Zoom into the past</h3>
+          <p>Pan, scroll, zoom, and inspect individual candles on the chart. Chart data coverage and intraday interval availability depend on TradingView.</p>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>© <span id="year">2026</span> Market Analytics · Independent market research</span>
+      <p>For informational and educational use only. Not investment advice, a trading signal, or a market forecast. SPX is an index, not a directly tradable security.</p>
+    </footer>
+  </div>
+</body>
+</html>
