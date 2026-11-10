@@ -2,7 +2,7 @@
 
 An interactive S&P 500 **index** chart, published as a GitHub Pages dashboard. The embedded chart uses historical **SPX** values — **not Apple (AAPL), SPY, or a CFD proxy**.
 
-![SPX historical S&P 500 index close chart](spx-preview.svg)
+![SPX historical S&P 500 index close chart](spx-preview.png)
 
 **[Open the interactive SPX viewer](https://market-analytics-lab.github.io/stock-market-analytics/)**
 
@@ -28,7 +28,7 @@ The original TradingView widget was removed because its `SP:SPX` symbol could no
 | `app.js` | Theme and fullscreen controls |
 | `chart.js` | SVG plotting, range selection, tooltip, and range extrema |
 | `spx-data.js` | Timestamped S&P 500 index historical observations |
-| `spx-preview.svg` | Repository README chart preview |
+| `spx-preview.png` | Repository README chart preview |
 
 ## Hosting
 
