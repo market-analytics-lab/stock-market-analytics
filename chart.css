@@ -1,0 +1,61 @@
+.spx-native-chart {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--surface);
+  color: var(--text);
+}
+.spx-status {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  padding: 17px 24px 14px;
+  border-bottom: 1px solid var(--border);
+}
+.spx-status > div { display: grid; gap: 3px; }
+.spx-status-label { color: var(--muted); font-size: 10px; letter-spacing: .11em; font-weight: 800; }
+.spx-status strong { font-size: clamp(15px, 1.8vw, 22px); font-weight: 780; letter-spacing: -.025em; font-variant-numeric: tabular-nums; }
+#spx-change { color: var(--accent); }
+#spx-change.negative { color: #f2747a; }
+.spx-graph { position: relative; flex: 1; min-height: 260px; overflow: hidden; touch-action: pan-y; }
+.spx-graph svg { display: block; width: 100%; height: 100%; font-family: inherit; }
+.spx-gridline { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 6; }
+.spx-axis { font-size: 11px; fill: var(--muted); font-variant-numeric: tabular-nums; }
+.spx-line { fill: none; stroke: var(--accent); stroke-width: 2.3; stroke-linejoin: round; stroke-linecap: round; }
+.spx-extreme { stroke: var(--surface); stroke-width: 2; }
+.spx-extreme.spx-high { fill: #77c0ff; }
+.spx-extreme.spx-low { fill: #f2a467; }
+.spx-extreme-text { font-weight: 800; font-size: 11px; }
+.spx-extreme-text.spx-high { fill: #77c0ff; }
+.spx-extreme-text.spx-low { fill: #f2a467; }
+.spx-crosshair { stroke: var(--muted); stroke-width: 1; stroke-dasharray: 4 5; }
+.spx-focus-dot { stroke: var(--surface); stroke-width: 2; fill: var(--accent); }
+.spx-tooltip {
+  position: absolute;
+  z-index: 2;
+  top: 10px;
+  transform: translateX(-50%);
+  min-width: 210px;
+  max-width: min(340px, 95%);
+  padding: 10px 13px;
+  border-radius: 9px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .25);
+  pointer-events: none;
+  display: grid;
+  gap: 4px;
+  text-align: center;
+}
+.spx-tooltip[hidden] { display: none; }
+.spx-tooltip strong { font-size: 12px; }
+.spx-tooltip span { font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.spx-data-note { padding: 7px 24px 12px; font-size: 10.5px; color: var(--muted); }
+.chart-window { height: clamp(440px, 56vw, 700px); }
+.chart-panel:fullscreen .spx-native-chart { flex: 1; }
+@media (max-width: 720px) {
+  .spx-status { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; padding: 12px; }
+  .spx-status strong { font-size: 17px; }
+  .spx-status-label { font-size: 9px; }
+  .spx-data-note { padding: 7px 12px 10px; }
+}
