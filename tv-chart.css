@@ -1,0 +1,37 @@
+.chart-panel .timeframe-toolbar { display: grid; grid-template-columns: 1fr; gap: 10px; padding: 13px 22px; }
+.tv-control-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+.tv-control-name { font-size: 10px; font-weight: 800; letter-spacing: .10em; color: var(--muted); min-width: 90px; }
+.tv-control-row .interval-buttons { gap: 2px; padding: 3px; max-width: 100%; overflow-x: auto; }
+.tv-control-row .interval-button { min-width: 39px; height: 29px; }
+.tv-control-row .tv-secondary { margin-left: auto; }
+.tv-control-row button { white-space: nowrap; }
+.tv-control-row .tv-action { border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); border-radius: 6px; padding: 6px 10px; cursor: pointer; font-size: 12px; font-weight: 700; }
+.tv-control-row .tv-action:hover { border-color: var(--accent); color: var(--text); }
+.tv-control-row .tv-action.active { color: var(--accent); border-color: var(--accent); background: var(--accent-bg); }
+.tv-control-row .tv-separator { height: 20px; border-left: 1px solid var(--border); margin: 0 2px; }
+.tv-control-row .tv-help { color: var(--muted); font-size: 11px; }
+.chart-window { height: clamp(510px, 61vw, 790px); }
+.spx-native-chart { min-height: 0; }
+.tv-ohlc-strip { display: flex; flex-wrap: wrap; gap: 12px; align-items: baseline; padding: 9px 23px; color: var(--muted); font-variant-numeric: tabular-nums; border-bottom: 1px solid var(--border); font-size: 11px; }
+.tv-ohlc-strip strong { color: var(--text); font-size: 12px; }
+.tv-ohlc-strip .tv-symbol { font-weight: 800; color: var(--accent); font-size: 13px; }
+.tv-ohlc-strip .down { color: #ef626e; }
+.tv-candle-surface { flex: 1; min-height: 320px; width: 100%; }
+.tv-coverage { display: flex; justify-content: space-between; gap: 10px; padding: 7px 18px 10px; color: var(--muted); font-size: 10px; border-top: 1px solid var(--border); }
+.tv-coverage a { color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+.chart-panel:fullscreen .tv-candle-surface { flex: 1; }
+@media (max-width: 900px) {
+  .tv-control-row .tv-secondary { margin-left: 0; }
+  .tv-control-name { min-width: 70px; }
+}
+@media (max-width: 720px) {
+  .chart-panel .timeframe-toolbar { padding: 9px; gap: 8px; }
+  .tv-control-row { gap: 6px; }
+  .tv-control-name { width: 100%; min-width: 0; padding-left: 4px; }
+  .tv-control-row .interval-button { min-width: 36px; padding: 0 5px; }
+  .tv-ohlc-strip { padding: 10px; gap: 8px; font-size: 10px; }
+  .tv-ohlc-strip strong { font-size: 11px; }
+  .tv-candle-surface { min-height: 310px; }
+  .chart-window { height: 700px; }
+  .tv-coverage { padding: 8px 10px; flex-wrap: wrap; }
+}
