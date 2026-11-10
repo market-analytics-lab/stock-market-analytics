@@ -35,3 +35,13 @@
   .chart-window { height: 700px; }
   .tv-coverage { padding: 8px 10px; flex-wrap: wrap; }
 }
+
+/* The 1871+ view uses monthly index observations, never fabricated candle OHLC. */
+.tv-ohlc-strip[hidden], .historical-warning[hidden] { display: none; }
+.historical-switch { color: var(--accent) !important; border: 1px solid var(--accent) !important; }
+.historical-switch.active { color: var(--text) !important; }
+.historical-warning { padding: 10px 23px; background: var(--accent-bg); border-bottom: 1px solid var(--border); font-size: 11px; line-height: 1.5; color: var(--muted); }
+.historical-warning strong { color: var(--text); }
+.historical-warning a { color: var(--accent); text-decoration: underline; }
+.history-mode #history-readout { color: var(--accent); }
+@media (max-width: 720px) { .historical-warning { padding: 9px 10px; } }
