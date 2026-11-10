@@ -147,7 +147,8 @@
 
   function setHistoryReadout(bar) {
     if (!bar) return;
-    document.getElementById("history-date").textContent = dateOf(bar.time);
+    // The first of the month is a date key, not the date of a daily trading observation.
+    document.getElementById("history-date").textContent = new Date(bar.time + "T00:00:00Z").toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
     document.getElementById("history-level").textContent = price(bar.value);
     document.getElementById("history-partial").textContent = bar.time === "2026-11-01" ? "(month to date)" : "";
   }
