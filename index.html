@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="dark light">
-  <meta name="description" content="Interactive actual SPX candlestick chart with minute, hourly, daily, weekly and monthly timeframes and zoom controls.">
+  <meta name="description" content="Interactive SPX candlestick chart and 1871–present monthly S&P Composite history with adjustable timeframes and zoom controls.">
   <title>SPX Candlestick Chart | Market Analytics</title>
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./chart.css">
   <link rel="stylesheet" href="./tv-chart.css">
   <script src="./spx-ohlc-data.js" defer></script>
+  <script src="./spx-history-data.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.0.9/dist/lightweight-charts.standalone.production.js" defer></script>
   <script src="./tv-chart.js" defer></script>
   <script src="./app.js" defer></script>
@@ -40,7 +41,7 @@
         <div class="intro-content">
           <p class="eyebrow"><span class="pulse" aria-hidden="true"></span> INTERACTIVE MARKET CHART</p>
           <h1 id="page-title">The market, in <span>focus.</span></h1>
-          <p class="intro-description">Analyze actual S&amp;P 500 index candlesticks. Choose minute, hourly, daily, weekly, or monthly intervals and explore price action with a crosshair, zoom, and indicators.</p>
+          <p class="intro-description">Explore S&amp;P 500 candles for recent price action and a historical monthly S&amp;P Composite series stretching back to 1871. Zoom, inspect levels, and compare market eras.</p>
         </div>
         <div class="intro-aside">
           <span class="overline">TRACKING</span>
@@ -79,7 +80,7 @@
 
         <div class="timeframe-toolbar">
           <div class="tv-control-row">
-            <span class="tv-control-name">CANDLE INTERVAL</span>
+            <span class="tv-control-name">CHART INTERVAL</span>
             <div class="interval-buttons" role="group" aria-label="SPX candle interval">
               <button type="button" class="interval-button" data-interval="1" aria-pressed="false">1m</button>
               <button type="button" class="interval-button" data-interval="5" aria-pressed="false">5m</button>
@@ -89,6 +90,7 @@
               <button type="button" class="interval-button active" data-interval="1D" aria-pressed="true">1D</button>
               <button type="button" class="interval-button" data-interval="1W" aria-pressed="false">1W</button>
               <button type="button" class="interval-button" data-interval="1M" aria-pressed="false">1M</button>
+              <button type="button" class="interval-button historical-switch" data-interval="HIST" aria-pressed="false" title="Monthly S&P Composite levels going back to January 1871">1871+</button>
             </div>
             <div class="tv-secondary tv-control-row" role="group" aria-label="Chart type">
               <button type="button" class="tv-action active" data-chart-mode="candles" aria-pressed="true">Candles</button>
@@ -104,7 +106,12 @@
               <button type="button" class="interval-button" data-range="3M" aria-pressed="false">3M</button>
               <button type="button" class="interval-button active" data-range="6M" aria-pressed="true">6M</button>
               <button type="button" class="interval-button" data-range="1Y" aria-pressed="false">1Y</button>
-              <button type="button" class="interval-button" data-range="ALL" aria-pressed="false">ALL</button>
+              <button type="button" class="interval-button" data-range="5Y" aria-pressed="false">5Y</button>
+              <button type="button" class="interval-button" data-range="10Y" aria-pressed="false">10Y</button>
+              <button type="button" class="interval-button" data-range="25Y" aria-pressed="false">25Y</button>
+              <button type="button" class="interval-button" data-range="50Y" aria-pressed="false">50Y</button>
+              <button type="button" class="interval-button" data-range="100Y" aria-pressed="false">100Y</button>
+              <button type="button" class="interval-button" data-range="ALL" aria-pressed="false" title="Full S&P Composite history since 1871">ALL</button>
             </div>
             <div class="tv-secondary tv-control-row" role="group" aria-label="Chart tools">
               <button type="button" class="tv-action" data-average="20" aria-pressed="false">SMA 20</button>
@@ -113,6 +120,7 @@
               <button type="button" class="tv-action" id="zoom-out" aria-label="Zoom out">−</button>
               <button type="button" class="tv-action" id="zoom-in" aria-label="Zoom in">+</button>
               <button type="button" class="tv-action" id="fit-chart">Fit</button>
+              <button type="button" class="tv-action" id="log-scale" aria-pressed="false" title="Toggle logarithmic price scale">Log Scale</button>
             </div>
           </div>
         </div>
@@ -120,12 +128,14 @@
         <div class="chart-window">
           <div id="spx-chart" class="spx-native-chart" role="group" aria-label="Interactive S&P 500 OHLC candlestick chart">
             <div class="spx-status">
-              <div><span class="spx-status-label">LAST CLOSE</span><strong id="spx-last">—</strong></div>
+              <div><span class="spx-status-label" id="spx-last-label">LAST CLOSE</span><strong id="spx-last">—</strong></div>
               <div><span class="spx-status-label">RANGE CHANGE</span><strong id="spx-change">—</strong></div>
-              <div><span class="spx-status-label">RANGE HIGH</span><strong id="spx-high">—</strong></div>
-              <div><span class="spx-status-label">RANGE LOW</span><strong id="spx-low">—</strong></div>
+              <div><span class="spx-status-label" id="spx-high-label">RANGE HIGH</span><strong id="spx-high">—</strong></div>
+              <div><span class="spx-status-label" id="spx-low-label">RANGE LOW</span><strong id="spx-low">—</strong></div>
             </div>
-            <div class="tv-ohlc-strip">
+            <div id="history-note" class="historical-warning" hidden><strong>Historical reconstruction:</strong> The monthly S&amp;P Composite goes back to January 1871. The modern S&amp;P 500 launched in 1957. Earlier values are not modern SPX OHLC candles; the latest month is provisional. <a href="https://shillerdata.com/" target="_blank" rel="noopener noreferrer">Data background ↗</a></div>
+            <div id="history-readout" class="tv-ohlc-strip" hidden><span class="tv-symbol">S&amp;P COMPOSITE</span><strong id="history-date">—</strong><span>MONTHLY LEVEL <strong id="history-level">—</strong></span><span id="history-partial"></span></div>
+            <div id="ohlc-strip" class="tv-ohlc-strip">
               <span class="tv-symbol">SPX</span>
               <strong id="ohlc-date">—</strong>
               <span>O <strong id="ohlc-open">—</strong></span>
@@ -142,7 +152,7 @@
         </div>
 
         <div class="chart-footer">
-          <span><span class="source-dot" aria-hidden="true"></span> Actual SPX OHLC bars from a historical snapshot; intraday coverage varies by interval, and data is not real-time.</span>
+          <span><span class="source-dot" aria-hidden="true"></span> Recent candles use actual SPX OHLC; 1871+ history uses reconstructed monthly index levels, not candles. Data is not real-time.</span>
           <a href="https://www.tradingview.com/chart/?symbol=SP%3ASPX" target="_blank" rel="noopener noreferrer">View full chart ↗</a>
         </div>
       </section>
@@ -151,7 +161,7 @@
         <article class="feature-card">
           <div class="feature-number">01 / PRICE ACTION</div>
           <h3>Choose a timeframe</h3>
-          <p>Select candle intervals from 1 minute to 1 month, or switch to a closing-price line. Weekly and monthly OHLC candles are aggregated from daily index values.</p>
+          <p>Select candles from 1 minute to 1 month or 1871+ for a historical monthly line. Range buttons span 1 day through the full 155-year record.</p>
         </article>
         <article class="feature-card">
           <div class="feature-number">02 / TECHNICAL STUDIES</div>
@@ -161,7 +171,7 @@
         <article class="feature-card">
           <div class="feature-number">03 / HISTORICAL CONTEXT</div>
           <h3>Explore market history</h3>
-          <p>The chart has about two years of daily candles and shorter intraday history. It is a dated snapshot, not a licensed live SPX feed; open TradingView for live charting.</p>
+          <p>The historical S&P Composite monthly series starts January 1871, but is not candle OHLC. The modern S&P 500 began in 1957. For recent daily candles and intraday activity, choose a candle interval.</p>
         </article>
       </section>
     </main>
