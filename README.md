@@ -20,7 +20,7 @@ The site uses plain HTML, CSS, and JavaScript — **no build, dependencies, API 
 2. Under **Build and deployment**, choose **Deploy from a branch**.
 3. Choose branch **main** and folder **/(root)**, then **Save**.
 4. After GitHub finishes publishing, your URL should be:
-   **https://jaczerin24.github.io/stock-market-analytics/**
+   **https://market-analytics-lab.github.io/stock-market-analytics/**
 
 You can also preview locally using a basic static file server, such as:
 
