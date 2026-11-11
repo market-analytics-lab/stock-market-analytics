@@ -63,17 +63,17 @@ def yahoo_bars(interval: str, period: str) -> list[list]:
         "includePrePost": "false",
         "events": "history",
     })
-    url = f"https://query1.finance.yahoo.com/v8/finance/chart/%5EGSPC?{params}"
-    request = urllib.request.Request(
-        url,
-        headers={
-            "User-Agent": USER_AGENT,
-            "Accept": "application/json",
-            "Referer": "https://finance.yahoo.com/",
-        },
-    )
     last_error = None
-    for attempt in range(2):
+    for attempt, host in enumerate(("query1.finance.yahoo.com", "query2.finance.yahoo.com")):
+        url = f"https://{host}/v8/finance/chart/%5EGSPC?{params}"
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": USER_AGENT,
+                "Accept": "application/json",
+                "Referer": "https://finance.yahoo.com/",
+            },
+        )
         try:
             with urllib.request.urlopen(request, timeout=22) as response:
                 result = json.load(response)["chart"]["result"][0]
@@ -88,6 +88,7 @@ def yahoo_bars(interval: str, period: str) -> list[list]:
                 date_key = datetime.fromtimestamp(timestamp, NEW_YORK).strftime("%Y-%m-%d")
                 key = date_key if interval == "1d" else int(timestamp)
                 found[key] = [key, *values]
+            time.sleep(1.0)  # Avoid hammering the shared chart-data endpoint.
             return [found[key] for key in sorted(found)]
         except (OSError, ValueError, KeyError, IndexError, TypeError) as exc:
             last_error = exc
