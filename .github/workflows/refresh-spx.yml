@@ -1,0 +1,59 @@
+name: Refresh SPX chart at 3:30 PM Central
+
+on:
+  schedule:
+    # GitHub understands America/Chicago, including daylight saving time.
+    - cron: '30 15 * * *'
+      timezone: America/Chicago
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: spx-daily-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out main branch
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Check update logic
+        run: python -m unittest refresh_spx_test.py
+
+      - name: Download real SPX prices and update 1871+ monthly series
+        run: python refresh_spx.py
+
+      - name: Commit changed datasets
+        id: publish
+        shell: bash
+        run: |
+          if git diff --quiet -- spx-ohlc-data.js spx-history-data.js index.html; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No new SPX daily trading data available."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add spx-ohlc-data.js spx-history-data.js index.html
+          git commit -m "chore: refresh authentic SPX chart data"
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+      # A push made with GITHUB_TOKEN does not automatically deploy branch-based
+      # GitHub Pages. Explicitly request a Pages build from the new main HEAD.
+      - name: Rebuild published GitHub Pages viewer
+        if: steps.publish.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
