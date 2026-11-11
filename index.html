@@ -9,10 +9,10 @@
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./chart.css">
   <link rel="stylesheet" href="./tv-chart.css">
-  <script src="./spx-ohlc-data.js" defer></script>
-  <script src="./spx-history-data.js" defer></script>
+  <script src="./spx-ohlc-data.js?asof=2026-11-09" defer></script>
+  <script src="./spx-history-data.js?asof=2026-11-09" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.0.9/dist/lightweight-charts.standalone.production.js" defer></script>
-  <script src="./tv-chart.js?v=20261110-1871" defer></script>
+  <script src="./tv-chart.js?v=20261111-daily" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -152,7 +152,7 @@
         </div>
 
         <div class="chart-footer">
-          <span><span class="source-dot" aria-hidden="true"></span> Recent candles use actual SPX OHLC; 1871+ history uses reconstructed monthly index levels, not candles. Data is not real-time.</span>
+          <span><span class="source-dot" aria-hidden="true"></span> Recent candles use actual SPX OHLC; 1871+ history uses reconstructed monthly index levels, not candles. Scheduled data refresh: 3:30 p.m. Central daily (market data/provider availability permitting). Not real-time.</span>
           <a href="https://www.tradingview.com/chart/?symbol=SP%3ASPX" target="_blank" rel="noopener noreferrer">View full chart ↗</a>
         </div>
       </section>
