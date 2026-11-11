@@ -81,6 +81,8 @@
     "1M": aggregate(day, (bar) => bar.time.slice(0, 7), (_, key) => `${key}-01`),
   };
   const historyBars = historySource.monthly.map(([time, value]) => ({ time, value }));
+  const latestHistoryKey = historyBars.at(-1).time;
+  const latestHistoryMonth = new Date(latestHistoryKey + "T00:00:00Z").toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
   const longRanges = new Set(["5Y", "10Y", "25Y", "50Y", "100Y", "ALL"]);
 
   let interval = "1D";
@@ -150,7 +152,7 @@
     // The first of the month is a date key, not the date of a daily trading observation.
     document.getElementById("history-date").textContent = new Date(bar.time + "T00:00:00Z").toLocaleDateString("en-US", { month: "long", year: "numeric", timeZone: "UTC" });
     document.getElementById("history-level").textContent = price(bar.value);
-    document.getElementById("history-partial").textContent = bar.time === "2026-11-01" ? "(month to date)" : "";
+    document.getElementById("history-partial").textContent = historySource.latestMonthPartial && bar.time === latestHistoryKey ? "(month to date)" : "";
   }
 
   function changeLogScale(active) {
@@ -190,13 +192,13 @@
     deltaElement.classList.toggle("negative", delta < 0);
     const requested = { "1D": "1 day", "5D": "5 days", "1M": "1 month", "3M": "3 months", "6M": "6 months", "1Y": "1 year", "5Y": "5 years", "10Y": "10 years", "25Y": "25 years", "50Y": "50 years", "100Y": "100 years", "ALL": "all available" }[range];
     if (historical) {
-      document.getElementById("coverage-note").textContent = `${historyBars.length} monthly S&P Composite / S&P 500 levels since 1871 · Showing ${count} months for ${requested} · Nov 2026 is provisional · NOT historical OHLC`;
+      document.getElementById("coverage-note").textContent = `${historyBars.length} monthly S&P Composite / S&P 500 levels since 1871 · Showing ${count} months for ${requested} · ${historySource.latestMonthPartial ? latestHistoryMonth + " provisional" : "Last month complete"} · Updated through ${historySource.asOf} · NOT historical OHLC`;
       setHistoryReadout(after);
       return;
     }
     const intervalName = { "1": "1-minute", "5": "5-minute", "15": "15-minute", "60": "hourly", "240": "4-hour", "1D": "daily", "1W": "weekly", "1M": "monthly" }[interval];
     const aggregation = ["15", "240", "1W", "1M"].includes(interval) ? " · Aggregated from actual OHLC" : "";
-    document.getElementById("coverage-note").textContent = `${selectedBars.length} ${intervalName} SPX bars · Showing ${count} bars for ${requested}${aggregation} · As of ${source.asOf} (historical, not live)`;
+    document.getElementById("coverage-note").textContent = `${selectedBars.length} ${intervalName} SPX bars · Showing ${count} bars for ${requested}${aggregation} · Latest visible bar ${dateOf(after.time)} · Daily snapshot through ${source.asOf} (not live)`;
     setOHLC(after, dateOf(after.time));
   }
 
