@@ -65,3 +65,35 @@
 .spx-turn-band.low-watch { background: rgba(99,151,255,.13); border-color: rgba(99,151,255,.70); }
 .spx-turn-band span { margin-top: 22px; padding: 3px 5px; border-radius: 4px; background: rgba(16,26,42,.88); color: white; font-weight: 800; font-size: 10px; white-space: nowrap; }
 @media (max-width:720px) { .spx-turning-toolbar { padding: 10px; } .spx-turning-watch { gap: 6px 10px; } }
+
+
+/* Historical walk-forward study, intentionally distinct from the fitted timing bands. */
+.pattern-research { padding: 25px 22px; border-top: 1px solid var(--border); background: var(--surface); }
+.research-intro h2 { margin: 0 0 9px; font-size: 21px; color: var(--text); }
+.pattern-research h3 { font-size: 16px; color: var(--text); margin: 24px 0 9px; }
+.research-note { font-size: 12px; line-height: 1.65; color: var(--muted); max-width: 1050px; margin: 5px 0 12px; }
+.research-meta { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 13px; }
+.research-metric { min-width: 130px; display: flex; flex-direction: column; gap: 4px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; padding: 10px 13px; }
+.research-metric span { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: .04em; }
+.research-metric strong { color: var(--text); font-variant-numeric: tabular-nums; font-size: 13px; }
+.research-cards { display: grid; grid-template-columns: repeat(4,minmax(135px,1fr)); gap: 10px; }
+.research-card { padding: 13px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface-2); display: flex; flex-direction: column; gap: 8px; }
+.research-card-head { color: var(--text); font-size: 12px; }
+.research-big { font-size: 24px; font-weight: 750; font-variant-numeric: tabular-nums; color: var(--text); }
+.research-card small { color: var(--muted); line-height: 1.35; font-size: 10px; }
+.research-card .research-caution, .research-table .research-caution { color: #f18a8f; }
+.research-card .research-plus { color: #54cba1; }
+.research-meter { background: var(--border); height: 6px; border-radius: 10px; overflow: hidden; }
+.research-meter span { display: block; height: 100%; border-radius: 10px; }
+.research-table-wrap { width: 100%; overflow-x: auto; }
+.research-table { border-collapse: collapse; min-width: 685px; font-size: 12px; width: 100%; color: var(--text); }
+.research-table th { text-align: left; font-size: 10px; color: var(--muted); padding: 12px 8px; border-bottom: 1px solid var(--border); }
+.research-table td { padding: 12px 8px; border-bottom: 1px solid var(--border); font-variant-numeric: tabular-nums; }
+.research-checks { display: grid; grid-template-columns: repeat(2, minmax(240px,1fr)); gap: 12px; }
+.research-check { padding: 12px; background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px; color: var(--muted); font-size: 11px; line-height: 1.9; }
+.research-check strong { display: block; color: var(--text); font-size: 12px; margin-bottom: 6px; }
+.research-hit { color: #5acaa3; }
+.research-miss { color: var(--muted); }
+.research-method { border-top: 1px solid var(--border); padding-top: 8px; }
+@media(max-width:900px){.research-cards{grid-template-columns:repeat(2,minmax(140px,1fr))}}
+@media(max-width:550px){.pattern-research{padding:16px 10px}.research-cards,.research-checks{grid-template-columns:1fr}.research-metric{min-width:45%}}
