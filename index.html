@@ -14,7 +14,7 @@
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.0.9/dist/lightweight-charts.standalone.production.js" defer></script>
   <script src="./spx-turning-points.js?v=20261120" defer></script>
   <script src="./spx-pattern-engine.js?v=20261120-v1" defer></script>
-  <script src="./tv-chart.js?v=20261120-turns" defer></script>
+  <script src="./tv-chart.js?v=20261120-multifeature" defer></script>
   <script src="./spx-pattern-dashboard.js?v=20261120-v1" defer></script>
   <script src="./app.js" defer></script>
 </head>
@@ -133,9 +133,11 @@
             <strong>SPX High / Low Study</strong>
             <button type="button" class="tv-action active" id="show-turn-labels" aria-pressed="true">Show 13 reference turns</button>
             <button type="button" class="tv-action active" id="show-turn-windows" aria-pressed="true">Show forecast windows</button>
+            <button type="button" class="tv-action" id="show-model-signals" aria-pressed="false" title="Historical out-of-sample top-decile research rankings; cutoff evaluated retrospectively and is not a historical trade signal">Model backtest markers</button>
             <span class="spx-turning-legend"><b style="color:#f8a23d">dH</b> Moderate high · <b style="color:#31c88a">dL</b> Moderate low · <b style="color:#f16475">JH</b> Major high · <b style="color:#6397ff">JL</b> Major low</span>
           </div>
           <div id="turning-watch-readout" class="spx-turning-watch" role="status" aria-live="polite">Loading turning-point calendar…</div>
+          <small class="spx-model-disclaimer">Purple M-H / M-L markers (optional) identify the top historical prediction scores. Their decile cutoff is retrospective; they are not evidence of real-time trade execution.</small>
         </div>
         <div class="chart-window">
           <div id="spx-chart" class="spx-native-chart" role="group" aria-label="Interactive S&P 500 OHLC candlestick chart">
