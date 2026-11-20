@@ -12,7 +12,8 @@
   <script src="./spx-ohlc-data.js?asof=2026-11-19" defer></script>
   <script src="./spx-history-data.js?asof=2026-11-19" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.0.9/dist/lightweight-charts.standalone.production.js" defer></script>
-  <script src="./tv-chart.js?v=20261111-daily" defer></script>
+  <script src="./spx-turning-points.js?v=20261120" defer></script>
+  <script src="./tv-chart.js?v=20261120-turns" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -125,6 +126,15 @@
           </div>
         </div>
 
+        <div class="spx-turning-toolbar" aria-label="Turning-point model controls">
+          <div class="spx-turning-controls">
+            <strong>SPX High / Low Study</strong>
+            <button type="button" class="tv-action active" id="show-turn-labels" aria-pressed="true">Show 13 reference turns</button>
+            <button type="button" class="tv-action active" id="show-turn-windows" aria-pressed="true">Show forecast windows</button>
+            <span class="spx-turning-legend"><b style="color:#f8a23d">dH</b> Moderate high · <b style="color:#31c88a">dL</b> Moderate low · <b style="color:#f16475">JH</b> Major high · <b style="color:#6397ff">JL</b> Major low</span>
+          </div>
+          <div id="turning-watch-readout" class="spx-turning-watch" role="status" aria-live="polite">Loading turning-point calendar…</div>
+        </div>
         <div class="chart-window">
           <div id="spx-chart" class="spx-native-chart" role="group" aria-label="Interactive S&P 500 OHLC candlestick chart">
             <div class="spx-status">
