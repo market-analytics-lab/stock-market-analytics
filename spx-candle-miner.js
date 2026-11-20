@@ -137,7 +137,15 @@
     const ys=targets[code];
     let fired=0,hits=0;
     for(const i of indices)if(c.flags[i]){fired++; if(ys[i])hits++;}
-    return {fired,hits,precision:fired?hits/fired:null};
+    // Several winning precursor days may lead to the SAME actual turn.
+    // Report distinct labeled events as well as per-session hits.
+    const set=labelIndex[code];
+    let eventsCovered=0;
+    for(const e of set) {
+      if ([1,2,3].some(k=>e-k>=0 && indices.includes(e-k) && c.flags[e-k]))
+        eventsCovered++;
+    }
+    return {fired,hits,eventsCovered,precision:fired?hits/fired:null};
   }
   const analysis={};
   const baseRates={};
@@ -147,8 +155,10 @@
     const baseline=trainEvents/train.length;
     const baselineTest=testEvents/test.length;
     baseRates[code]={train:baseline,test:baselineTest,trainWindows:trainEvents,testWindows:testEvents,
-      trainLabels:labeled.filter(p=>p.code===code && dateIndex.has(p.date) && dateIndex.get(p.date)<split).length,
-      testLabels:labeled.filter(p=>p.code===code && dateIndex.has(p.date) && dateIndex.get(p.date)>=split).length};
+      trainLabels:labeled.filter(p=>p.code===code && dateIndex.has(p.date) &&
+        dateIndex.get(p.date)>minIndex && dateIndex.get(p.date)<split-horizon+1).length,
+      testLabels:labeled.filter(p=>p.code===code && dateIndex.has(p.date) &&
+        dateIndex.get(p.date)>split && dateIndex.get(p.date)<L).length};
     const ranked=[];
     for(const c of candidates){
       const tr=evaluate(c,code,train);
