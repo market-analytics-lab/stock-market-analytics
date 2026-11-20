@@ -5,6 +5,8 @@ on:
     paths:
       - 'spx-pattern-*.js'
       - 'spx-pattern-test.cjs'
+      - 'refresh_context.py'
+      - 'refresh_context_test.py'
       - '.github/workflows/test-spx-pattern.yml'
       - 'spx-ohlc-data.js'
       - 'spx-history-data.js'
@@ -31,3 +33,5 @@ jobs:
           node --check tv-chart.js
       - name: Walk-forward and no-leakage regression test
         run: node spx-pattern-test.cjs
+      - name: Verify external context importer
+        run: python -m unittest refresh_context_test.py
