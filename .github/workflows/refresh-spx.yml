@@ -34,19 +34,22 @@ jobs:
       - name: Download real SPX prices and update 1871+ monthly series
         run: python refresh_spx.py
 
+      - name: Refresh VIX volatility and S&P 500 market breadth context
+        run: python refresh_context.py
+
       - name: Commit changed datasets
         id: publish
         shell: bash
         run: |
-          if git diff --quiet -- spx-ohlc-data.js spx-history-data.js index.html; then
+          if git diff --quiet -- spx-ohlc-data.js spx-history-data.js spx-vix-data.js spx-breadth-data.js index.html; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
-            echo "No new SPX daily trading data available."
+            echo "No newer SPX/VIX/breadth datasets available."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add spx-ohlc-data.js spx-history-data.js index.html
-          git commit -m "chore: refresh authentic SPX chart data"
+          git add spx-ohlc-data.js spx-history-data.js spx-vix-data.js spx-breadth-data.js index.html
+          git commit -m "chore: refresh SPX, VIX and market breadth data"
           git push origin HEAD:main
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
