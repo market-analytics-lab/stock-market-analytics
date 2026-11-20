@@ -1,0 +1,28 @@
+/* Separate SPX Candlestick Pattern Explorer — does not modify first chart. */
+.candle-explorer {margin:23px 0 0;padding:22px;border:1px solid var(--border);background:var(--surface);border-radius:12px;}
+.candle-explorer h2 {font-size:21px;color:var(--text);margin:0 0 6px;}
+.candle-explorer .intro-copy{font-size:12px;color:var(--muted);line-height:1.7;max-width:1100px;margin:0 0 14px;}
+.candle-explorer-toolbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 0 12px;}
+.candle-explorer-toolbar .tool-name{font-size:11px;color:var(--muted);font-weight:800;letter-spacing:.06em;}
+.candle-explorer button {border:1px solid var(--border);border-radius:6px;background:var(--surface-2);color:var(--muted);font-size:11px;font-weight:700;cursor:pointer;padding:7px 10px;}
+.candle-explorer button:hover{border-color:var(--accent);color:var(--text);}
+.candle-explorer button.active{border-color:var(--accent);color:var(--accent);background:var(--accent-bg);}
+.candle-explorer-gap{flex:1;}
+.candle-explorer-surface{width:100%;height:490px;border:1px solid var(--border);border-radius:6px;overflow:hidden;min-width:0;}
+.candle-explorer-crosshair{font-size:11px;color:var(--muted);padding:7px 2px;font-variant-numeric:tabular-nums;}
+.candle-explorer-status,.candle-explorer-coverage{font-size:11px;color:var(--muted);line-height:1.65;margin:7px 0 0;}
+.candle-explorer-selected,.candle-explorer-current{display:flex;align-items:baseline;flex-wrap:wrap;gap:8px;margin:12px 0;padding:11px 13px;border:1px solid var(--border);border-radius:6px;background:var(--surface-2);font-size:12px;color:var(--muted);}
+.candle-explorer-selected strong,.candle-explorer-current strong{color:var(--text);}
+.candle-explorer-selected small,.candle-explorer-current small{font-size:10px;color:var(--muted);}
+.candle-explorer h3{font-size:15px;color:var(--text);margin:17px 0 8px;}
+.candle-explorer-patterns{overflow-x:auto;max-height:500px;overflow-y:auto;border:1px solid var(--border);border-radius:7px;}
+.candle-pattern-table{border-collapse:collapse;width:100%;min-width:700px;text-align:left;font-size:11px;}
+.candle-pattern-table th{position:sticky;top:0;background:var(--surface-2);color:var(--muted);z-index:1;font-size:10px;padding:10px;border-bottom:1px solid var(--border);}
+.candle-pattern-table td{padding:10px;color:var(--text);border-bottom:1px solid var(--border);vertical-align:middle;}
+.candle-pattern-table tr.selected td{background:var(--accent-bg);}
+.candle-pattern-table small{display:block;margin-top:3px;font-size:10px;color:var(--muted);}
+.candle-pattern-table button{padding:5px 9px;}
+.candle-warning{font-size:12px;color:var(--muted);margin:10px;}
+.candle-explorer-legend{font-size:11px;color:var(--muted);line-height:1.65;margin:10px 0;}
+.candle-explorer-note{color:var(--muted);font-size:11px;line-height:1.65;margin:10px 0 0;}
+@media(max-width:720px){.candle-explorer{padding:12px 9px;margin-top:15px}.candle-explorer-surface{height:390px}.candle-explorer-toolbar{gap:5px}.candle-explorer button{padding:7px 8px}}
