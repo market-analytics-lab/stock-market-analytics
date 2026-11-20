@@ -97,3 +97,5 @@
 .research-method { border-top: 1px solid var(--border); padding-top: 8px; }
 @media(max-width:900px){.research-cards{grid-template-columns:repeat(2,minmax(140px,1fr))}}
 @media(max-width:550px){.pattern-research{padding:16px 10px}.research-cards,.research-checks{grid-template-columns:1fr}.research-metric{min-width:45%}}
+
+.spx-model-disclaimer { display: block; margin-top: 7px; color: var(--muted); font-size: 10px; line-height: 1.4; }
