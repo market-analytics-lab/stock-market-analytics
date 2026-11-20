@@ -344,7 +344,7 @@
     const { first, values } = dataForRange();
     if (!values.length) return;
     const count = Math.max(values.length, 1);
-    chart.timeScale().setVisibleLogicalRange({ from: Math.max(first - .5, -.5), to: selectedBars.length - 1 + Math.max(1.5, count * .03) });
+    chart.timeScale().setVisibleLogicalRange({ from: Math.max(first - .5, -.5), to: selectedBars.length - 1 + ((["3M", "6M", "1Y"].includes(range) && ["1D", "1W", "1M"].includes(interval)) ? futureCount + 2 : Math.max(1.5, count * .03)) });
     const historical = interval === "HIST";
     const high = Math.max(...values.map((bar) => historical ? bar.value : bar.high));
     const low = Math.min(...values.map((bar) => historical ? bar.value : bar.low));
