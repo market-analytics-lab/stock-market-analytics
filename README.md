@@ -19,6 +19,20 @@ An interactive chart of the **S&P 500 index (SPX / Yahoo symbol `^GSPC`)**, with
 
 Weekly/monthly candles are aggregated from **actual daily OHLC** bars. The 15-minute and 4-hour candles are aggregated from genuine intraday bars. No candle's opening price is guessed or filled from a previous close.
 
+## Second chart: SPX Candlestick Pattern Explorer
+
+The separate **SPX Candlestick Pattern Explorer** appears immediately below the primary chart and above the longer statistical report. It uses the same genuine daily SPX OHLC dataset; it does **not** infer 1871-era candle wicks from monthly averages.
+
+- The rule generator searches **tens of thousands** of single-bar and combined hypotheses: zero/short/long upper and lower wicks, body-to-range ratios, doji/hammer/shooting star, engulfing/inside/outside bars, gaps, highs/lows, range expansion, averages, and dozens of two-to-five-candle color patterns including separated green/red sequences.
+- Each rule fires on a completed daily candle. A success means a *user-supplied* dH/dL/JH/JL date falls **1–3 subsequent trading sessions later**. There is no use of future bars in computing the candle feature.
+- Rule selection uses the **first 70% of available daily OHLC bars**, leaving the most recent 30% separate as a chronological **holdout**. The last three days near the split are withheld from training targets to prevent target-label crossing.
+- Rules are scored by a conservative Wilson-lower-bound training statistic. Neither their ranking nor selection consults holdout results. Each row displays **winning signal sessions / all fired sessions**, **distinct labeled turning points covered**, and the corresponding later holdout counts.
+- A single labeled turn can be preceded by multiple successful signal sessions. For example, **3 winning days can refer to just 1 actual market turn**. That is why unique-event coverage is shown.
+- Select any pattern in the ranked table to see purple **P• training** and **T• later holdout** occurrence markers on the second chart; the colored arrows for the user's labeled dates remain visible. The latest-bar rule count is a descriptive resemblance measure, **not** a probability.
+- The separate chart supports zoom, crosshair, **1M/3M/6M/1Y/ALL** ranges, and show/hide pattern overlays while leaving the primary multi-century chart intact.
+
+**The extreme multiple-testing limitation matters:** Tens of thousands of patterns have been searched against just **13 user-supplied turning-point dates**; some dates fall within the initial feature warmup or test periods. Many training winners will be random coincidences, and some labels have no events in the later holdout. These patterns are *hypotheses to monitor*, not statistically verified predictors. A genuine independent multi-year daily SPX OHLC archive, additional turning-point labels, and forward monitoring would be needed before claiming a reproducible edge. Verification: \`node spx-candle-test.cjs\`.
+
 ## SPX turning-point research (experimental)
 
 The viewer now has two separate studies:
