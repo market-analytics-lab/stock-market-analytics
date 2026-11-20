@@ -192,10 +192,21 @@
        row.low>=thresholds[1]?"L":"H",high:row.high,low:row.low}));
 
   function rsiDaily(bars, n=14) {
-    const changes=bars.slice(-n-1).slice(1).map((bar,j)=>bar.close-bars[bars.length-n-1+j].close);
-    const gains=changes.reduce((a,x)=>a+Math.max(0,x),0);
-    const losses=changes.reduce((a,x)=>a+Math.max(0,-x),0);
-    return gains+losses ? 100*gains/(gains+losses) : 50;
+    // Wilder's RSI: seed averages with the first n changes, then smooth.
+    if (bars.length <= n) return 50;
+    let up=0,down=0;
+    for(let i=1;i<=n;i++) {
+      const change=bars[i].close-bars[i-1].close;
+      up+=Math.max(0,change);
+      down+=Math.max(0,-change);
+    }
+    up/=n; down/=n;
+    for(let i=n+1;i<bars.length;i++) {
+      const change=bars[i].close-bars[i-1].close;
+      up=(up*(n-1)+Math.max(0,change))/n;
+      down=(down*(n-1)+Math.max(0,-change))/n;
+    }
+    return up+down ? 100*up/(up+down) : 50;
   }
   function dailyEvidence() {
     const rows=ohlc.daily.map(r=>({time:r[0],open:r[1],high:r[2],low:r[3],close:r[4]}));
