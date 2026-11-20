@@ -96,6 +96,29 @@
   const scroller=el("div","research-table-wrap");scroller.appendChild(table);slot.appendChild(scroller);
   slot.appendChild(prose("Brier skill greater than zero beats a rolling historical base-rate forecast; negative values mean the statistical model performed worse. On this test, moderate and major lows did not consistently improve every metric. The major-high model did not demonstrate useful ranking performance."));
 
+
+  const earlier=window.SPX_EARLIER_ERA;
+  if(earlier && earlier.oosCount) {
+    slot.appendChild(el("h3","","Earlier historical stress test: 1930–1989"));
+    slot.appendChild(prose("Same frozen model specification, tested on another "+earlier.oosCount+
+      " monthly periods. These older data represent reconstructed monthly predecessor-index averages. This is an additional historical diagnostic, not independent prospective confirmation."));
+    const oldTable=el("table","research-table");
+    const oldHead=document.createElement("thead");
+    const oldHr=document.createElement("tr");
+    ["Turn","Event count","Top 10% hits","Top decile lift","Brier skill"].forEach(t=>oldHr.appendChild(el("th","",t)));
+    oldHead.appendChild(oldHr);oldTable.appendChild(oldHead);
+    const oldBody=document.createElement("tbody");
+    for(const row of earlier.ev){
+      const tr=document.createElement("tr");
+      [row.code,row.events+" / "+row.tested,row.topHits+" / "+row.topCount,
+       row.topLift.toFixed(2)+"×",pct(row.brierSkill,2)].forEach((v,i)=>tr.appendChild(el("td",i===4&&row.brierSkill<=0?"research-caution":"",v)));
+      oldBody.appendChild(tr);
+    }
+    oldTable.appendChild(oldBody);
+    const wrap=el("div","research-table-wrap");wrap.appendChild(oldTable);slot.appendChild(wrap);
+    slot.appendChild(prose("The older-period major-low ranking remains above average, but none of the four probability models beat the base-rate forecast on Brier skill here. This argues against treating these probabilities as calibrated forecasts."));
+  }
+
   slot.appendChild(el("h3","","Current daily SPX confirmation checklist"));
   const daily=model.daily;
   if(daily){
