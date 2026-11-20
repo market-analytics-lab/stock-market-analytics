@@ -76,8 +76,8 @@
     patterns.forEach(item=>{
       const row=node("tr",item.id===id?"selected":"");
       const name=node("td","",item.name);name.appendChild(node("small","candle-pattern-family",item.family));row.appendChild(name);
-      row.appendChild(node("td","",item.train.hits+"/"+item.train.fired+" ("+p(item.train.precision)+")"));
-      row.appendChild(node("td","",item.test.fired?item.test.hits+"/"+item.test.fired+" ("+p(item.test.precision)+")":"0 fires (not tested)"));
+      row.appendChild(node("td","",item.train.hits+"/"+item.train.fired+" ("+p(item.train.precision)+", "+item.train.eventsCovered+" unique turns)"));
+      row.appendChild(node("td","",item.test.fired?item.test.hits+"/"+item.test.fired+" ("+p(item.test.precision)+", "+item.test.eventsCovered+" unique turns)":"0 fires (not tested)"));
       const button=node("button","candle-explorer-pick",item.id===id?"Showing":"Show");
       button.type="button";button.setAttribute("aria-label","Show "+item.name);
       button.addEventListener("click",()=>{id=item.id;render();});
@@ -106,8 +106,9 @@
     if(selected) {
       info.appendChild(node("strong","","Selected: "+selected.name));
       info.appendChild(node("span","", " Earlier "+selected.train.hits+"/"+selected.train.fired+
-        " hits; later "+selected.test.hits+"/"+selected.test.fired+
-        " hits. Training baseline "+p(b.train)+"."));
+        " winning signal days covering "+selected.train.eventsCovered+" distinct turns; later "+
+        selected.test.hits+"/"+selected.test.fired+" winning signal days covering "+
+        selected.test.eventsCovered+" distinct turns. Training baseline "+p(b.train)+"."));
       info.appendChild(node("small","","Purple P• marks earlier training occurrences; T• marks later holdout occurrences. Colored arrows mark your 13 given dates."));
     }
   }
