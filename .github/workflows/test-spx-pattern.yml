@@ -1,0 +1,32 @@
+name: Validate SPX pattern research
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'spx-pattern-*.js'
+      - 'spx-pattern-test.cjs'
+      - 'spx-ohlc-data.js'
+      - 'spx-history-data.js'
+      - 'spx-vix-data.js'
+      - 'spx-breadth-data.js'
+      - 'tv-chart.js'
+      - 'index.html'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify JavaScript parses
+        run: |
+          node --check spx-pattern-engine.js
+          node --check spx-pattern-dashboard.js
+          node --check spx-pattern-context.js
+          node --check tv-chart.js
+      - name: Walk-forward and no-leakage regression test
+        run: node spx-pattern-test.cjs
