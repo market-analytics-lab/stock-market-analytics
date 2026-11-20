@@ -9,6 +9,7 @@
   <link rel="stylesheet" href="./styles.css">
   <link rel="stylesheet" href="./chart.css">
   <link rel="stylesheet" href="./tv-chart.css?v=20261120-patterns">
+  <link rel="stylesheet" href="./spx-candle-explorer.css?v=20261120">
   <script src="./spx-ohlc-data.js?asof=2026-11-19" defer></script>
   <script src="./spx-history-data.js?asof=2026-11-19" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.0.9/dist/lightweight-charts.standalone.production.js" defer></script>
@@ -20,6 +21,8 @@
   <script src="./tv-chart.js?v=20261120-multifeature" defer></script>
   <script src="./spx-pattern-dashboard.js?v=20261120-v2" defer></script>
   <script src="./spx-pattern-context.js?v=20261120-v2" defer></script>
+  <script src="./spx-candle-miner.js?v=20261120" defer></script>
+  <script src="./spx-candle-explorer.js?v=20261120" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -173,6 +176,48 @@
           <span><span class="source-dot" aria-hidden="true"></span> Recent candles use actual SPX OHLC; 1871+ history uses reconstructed monthly index levels, not candles. Scheduled data refresh: 3:30 p.m. Central daily (market data/provider availability permitting). Not real-time.</span>
           <a href="https://www.tradingview.com/chart/?symbol=SP%3ASPX" target="_blank" rel="noopener noreferrer">View full chart ↗</a>
         </div>
+      </section>
+
+
+      <section class="candle-explorer" id="candle-explorer" aria-label="SPX candlestick precursor pattern explorer">
+        <h2>SPX Candlestick Pattern Explorer</h2>
+        <p class="intro-copy">Second independent SPX chart: genuine daily candles, your 13 labeled highs and lows, and discovered wick/body/sequence patterns. Rules are ranked on earlier observations only; later data is shown separately as a holdout. Select a pattern to display the exact sessions when it appeared.</p>
+        <div class="candle-explorer-toolbar" aria-label="Choose turning-point type">
+          <span class="tool-name">TARGET TURN</span>
+          <button type="button" data-candle-target="dH" aria-pressed="false">dH · Moderate high</button>
+          <button type="button" data-candle-target="dL" aria-pressed="false">dL · Moderate low</button>
+          <button type="button" data-candle-target="JH" aria-pressed="false">JH · Major high</button>
+          <button type="button" class="active" data-candle-target="JL" aria-pressed="true">JL · Major low</button>
+        </div>
+        <div class="candle-explorer-toolbar" aria-label="Separate chart navigation">
+          <span class="tool-name">VISIBLE RANGE</span>
+          <button type="button" data-candle-range="1M" aria-pressed="false">1M</button>
+          <button type="button" data-candle-range="3M" aria-pressed="false">3M</button>
+          <button type="button" class="active" data-candle-range="6M" aria-pressed="true">6M</button>
+          <button type="button" data-candle-range="1Y" aria-pressed="false">1Y</button>
+          <button type="button" data-candle-range="ALL" aria-pressed="false">ALL</button>
+          <span class="candle-explorer-gap"></span>
+          <button type="button" class="active" id="candle-overlay-toggle" aria-pressed="true" title="Toggle only the purple selected-pattern markers; user-provided date arrows remain visible">Pattern markers</button>
+          <button type="button" id="candle-zoom-out" title="Zoom out">−</button>
+          <button type="button" id="candle-zoom-in" title="Zoom in">+</button>
+          <button type="button" id="candle-fit">Fit</button>
+        </div>
+        <div id="candle-explorer-surface" class="candle-explorer-surface" role="group" aria-label="Separate S&P 500 daily OHLC candlesticks with user supplied highs and lows and selected mined pattern markers"></div>
+        <div id="candle-explorer-crosshair" class="candle-explorer-crosshair" aria-live="off">SPX O/H/L/C loading…</div>
+        <p class="candle-explorer-legend">
+          <strong style="color:#f8a23d">dH</strong> moderate high ·
+          <strong style="color:#31c88a">dL</strong> moderate low ·
+          <strong style="color:#f16475">JH</strong> major high ·
+          <strong style="color:#6397ff">JL</strong> major low ·
+          <strong style="color:#bca4ff">P• / T•</strong> discovered-pattern occurrence (training / later holdout).
+        </p>
+        <div id="candle-explorer-status" class="candle-explorer-status">Scanning genuine daily SPX OHLC candles…</div>
+        <div id="candle-explorer-coverage" class="candle-explorer-coverage"></div>
+        <div id="candle-explorer-current" class="candle-explorer-current"></div>
+        <div id="candle-explorer-selected" class="candle-explorer-selected"></div>
+        <h3>Discovered precursor rules, ranked on earlier data</h3>
+        <div id="candle-explorer-patterns" class="candle-explorer-patterns"></div>
+        <p class="candle-explorer-note"><strong>Critical limitation:</strong> This searches tens of thousands of possible patterns against just 13 user-labeled turns. Apparent high training hit rates can be coincidence. Some target types have zero later labeled events; their holdout scores cannot establish predictive accuracy. The feature search does not use future OHLC values, but the target label is defined using the following 1–3 trading sessions. Do not treat rankings or current matches as calibrated odds or buy/sell signals.</p>
       </section>
 
       <section id="pattern-research" class="pattern-research" aria-label="SPX historical pattern research and walk-forward backtest"></section>
