@@ -23,20 +23,20 @@ Weekly/monthly candles are aggregated from **actual daily OHLC** bars. The 15-mi
 
 The viewer now has two separate studies:
 
-1. **Your 13 hand-labeled turning points** (\`dH\`, \`dL\`, \`JH\`, \`JL\`) and their calendar-day watch windows. Those windows are descriptive hypotheses fitted from a very small user-supplied sequence, not statistically calibrated probabilities.
-2. **Independent multi-feature historical study**, implemented in \`spx-pattern-engine.js\`. This tests price/momentum/volatility/seasonality and fixed multi-year cycle features against reproducible **monthly-average** swing labels.
+1. **Your 13 hand-labeled turning points** (`dH`, `dL`, `JH`, `JL`) and their calendar-day watch windows. Those windows are descriptive hypotheses fitted from a very small user-supplied sequence, not statistically calibrated probabilities.
+2. **Independent multi-feature historical study**, implemented in `spx-pattern-engine.js`. This tests price/momentum/volatility/seasonality and fixed multi-year cycle features against reproducible **monthly-average** swing labels.
 
-Click **Model backtest markers** to visualize purple \`M-H\` and \`M-L\` high-scoring OOS months. Their top-decile cutoff was established after ranking the entire held-out sample. They are **retrospective diagnostics**, not historically executable trade alerts. Leave that overlay off for a clean chart.
+Click **Model backtest markers** to visualize purple `M-H` and `M-L` high-scoring OOS months. Their top-decile cutoff was established after ranking the entire held-out sample. They are **retrospective diagnostics**, not historically executable trade alerts. Leave that overlay off for a clean chart.
 
 ### Model methodology
 
 - **Data**: reconstructed monthly S&P Composite/index averages from 1871 to the last complete month; never call them daily closing-price highs or daily OHLC candles.
-- **Inputs (16 total)**: lagged log returns over 1/3/6/12 months, three-month momentum acceleration, level versus trailing average and range extrema, realized volatility at 6 and 12 months, a 14-change momentum oscillator, annual-seasonal sine/cosine and pre-specified fixed-cycle sine/cosine terms (48 and 96 months).
+- **Inputs (16 total)**: lagged log returns over 1/3/6/12 months, three-month momentum acceleration, level versus trailing average and range extrema, realized volatility at 6 and 12 months, a 14-change momentum oscillator, annual-seasonal sine/cosine, a pre-specified 48-month sine/cosine and a 96-month sine term.
 - **Historical target**: moderate = local ±2-month average-price extremum followed by a ≥6% reversal within six months; major = local ±5-month extremum followed by a ≥16% reversal within 12 months. Major supersedes moderate. This is deliberately **not** a claim that the model recovers the user's 13 exact closing-price event dates.
 - **Forecast**: separate regularized logistic models estimate whether a retrospectively defined dH/dL/JH/JL event occurs within the following **three months**.
 - **Backtest**: expanding-window, five-year refits beginning January 1990 through August 2025. Models use older observations only; at least 15 months of outcome maturity/embargo are withheld from training. The baseline is the historical positive-event frequency from that training vintage.
 - **Measurement**: Brier skill above 0 beats the vintage base-rate forecast; top-decile hit rate summarizes ranking, *not* trading profits. The small number of major events makes those estimates uncertain.
-- **Regression test**: \`node spx-pattern-test.cjs\` checks syntax and reproduces earlier predictions after artificially truncating future history. GitHub Actions runs this on changed model files.
+- **Regression test**: `node spx-pattern-test.cjs` checks syntax and reproduces earlier predictions after artificially truncating future history. GitHub Actions runs this on changed model files.
 
 ### Initial January 1990–August 2025 walk-forward results
 
@@ -49,12 +49,25 @@ Click **Model backtest markers** to visualize purple \`M-H\` and \`M-L\` high-sc
 | JH major high | 15 | 3.5% | 0 / 43 (0.0%) | 0.00× | −1.13% |
 | JL major low | 33 | 7.7% | 9 / 43 (20.9%) | 2.71× | +3.16% |
 
+### Earlier-period robustness check: 1930–1989
+
+The exact same model was also run as an earlier **720-month** expanding-window historical stress test. No changes to the price features or event labels were made between the two periods.
+
+| Label | Event count | Top-scored 10% hit rate | Ranking lift | Brier skill |
+|---|---:|---:|---:|---:|
+| dH | 86 / 720 | 13 / 72 (18.1%) | 1.51× | −2.70% |
+| dL | 92 / 720 | 11 / 72 (15.3%) | 1.20× | −1.31% |
+| JH | 45 / 720 | 4 / 72 (5.6%) | 0.89× | −0.81% |
+| JL | 72 / 720 | 16 / 72 (22.2%) | 2.22× | −0.03% |
+
+All four Brier skill results were nonpositive in the older era. The JL ranking persisted, but **this does not validate accurate probabilities**. These earlier years are reconstructed monthly averages.
+
 **Interpretation**: the early study suggests some ranking usefulness for major lows, but the Brier improvement is small and the major-high model has not demonstrated an edge. All probabilities remain experimental; the 13 hand-supplied dates were not used to optimize these tests. There is no evidence here of a profitable strategy or a reliable exact-date prediction.
 
 ### Independent VIX and breadth evidence
 
-- \`spx-vix-data.js\`: historical month-end **VIX** closes starting 1990; initial archive from [datasets/finance-vix](https://github.com/datasets/finance-vix), originally sourced from [Cboe](https://www.cboe.com/tradable_products/vix/vix_historical_data). The daily workflow attempts an official Cboe refresh. An independent analysis in \`spx-pattern-context.js\` reports next-three-month pivot frequencies conditional on the **preceding 60 months' VIX quartiles**. This is descriptive, not an independently trained backtest and not part of the 1871 model.
-- \`spx-breadth-data.js\`: dated advances, declines and a 20-session A/D comparison from [DeanFinancials current-constituent S&P 500 archive](https://github.com/DeanFinancials/deanfi-data). Its roughly two-year archive and changing/modern stock membership can create **survivorship/selection bias**. Treat it as short-term context only; it cannot validate 1871-era breadth.
+- `spx-vix-data.js`: historical month-end **VIX** closes starting 1990; initial archive from [datasets/finance-vix](https://github.com/datasets/finance-vix), originally sourced from [Cboe](https://www.cboe.com/tradable_products/vix/vix_historical_data). The daily workflow attempts an official Cboe refresh. An independent analysis in `spx-pattern-context.js` reports next-three-month pivot frequencies conditional on the **preceding 60 months' VIX quartiles**. This is descriptive, not an independently trained backtest and not part of the 1871 model.
+- `spx-breadth-data.js`: dated advances, declines and a 20-session A/D comparison from [DeanFinancials current-constituent S&P 500 archive](https://github.com/DeanFinancials/deanfi-data). Its roughly two-year archive and changing/modern stock membership can create **survivorship/selection bias**. Treat it as short-term context only; it cannot validate 1871-era breadth.
 - The dashboard labels the *date of the last available observation* for all external sources. Missing or stale feeds are not replaced with synthetic values. The regular **3:30 p.m. America/Chicago** workflow includes these feeds while preserving prior data when retrieval fails.
 
 
