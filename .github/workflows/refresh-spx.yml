@@ -29,7 +29,7 @@ jobs:
           python-version: '3.12'
 
       - name: Check update logic
-        run: python -m unittest refresh_spx_test.py
+        run: python -m unittest refresh_spx_test.py refresh_context_test.py
 
       - name: Download real SPX prices and update 1871+ monthly series
         run: python refresh_spx.py
