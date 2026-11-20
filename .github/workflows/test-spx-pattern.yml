@@ -5,6 +5,7 @@ on:
     paths:
       - 'spx-pattern-*.js'
       - 'spx-pattern-test.cjs'
+      - '.github/workflows/test-spx-pattern.yml'
       - 'spx-ohlc-data.js'
       - 'spx-history-data.js'
       - 'spx-vix-data.js'
