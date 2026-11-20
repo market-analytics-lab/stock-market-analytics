@@ -128,6 +128,7 @@
   surface.appendChild(bandHost);
   let showTurnLabels = true;
   let showTurnWindows = true;
+  let showModelSignals = false;
   let candleMarkers = null;
   let historicalMarkers = null;
   let futureCount = 0;
@@ -173,27 +174,34 @@
     const target = historical ? historyLine : candles;
     if (historical && candleMarkers) candleMarkers.setMarkers([]);
     if (!historical && historicalMarkers) historicalMarkers.setMarkers([]);
-    if (!showTurnLabels) {
-      if (candleMarkers) candleMarkers.setMarkers([]);
-      if (historicalMarkers) historicalMarkers.setMarkers([]);
-      return;
-    }
     const mapped = new Map();
-    for (const point of turns.points) {
+    for (const point of (showTurnLabels ? turns.points : [])) {
       const time = nearestBarDate(point.date, selectedBars, interval);
       if (!time) continue;
       if (!mapped.has(String(time))) mapped.set(String(time), []);
       mapped.get(String(time)).push(point);
     }
+    // Retrospective OOS decile ranking for research visualization ONLY.
+    // The percentile cutoff was calculated over the entire test sample; it
+    // must never be presented as a deployable historical trading rule.
+    const modelAlerts=window.SPX_PATTERN_ENGINE?.historicalSignals || [];
+    if (showModelSignals && ["HIST","1D","1W","1M"].includes(interval)) {
+      for (const signal of modelAlerts) {
+        const time=nearestBarDate(signal.date,selectedBars,interval);
+        if (!time) continue;
+        if (!mapped.has(String(time))) mapped.set(String(time),[]);
+        mapped.get(String(time)).push({code:signal.kind==="H"?"M-H":"M-L",kind:signal.kind,isModel:true});
+      }
+    }
     const markers = [...mapped].map(([k, items]) => {
-      const hasHigh = items.some(item => item.code.endsWith("H"));
+      const hasHigh = items.some(item => item.isModel ? item.kind==="H" : item.code.endsWith("H"));
       const major = items.some(item => item.code.startsWith("J"));
-      const item = items.find(point => point.code.startsWith("J")) || items[0];
+      const item = items.find(point => !point.isModel && point.code.startsWith("J")) || items.find(point => !point.isModel) || items[0];
       const time = typeof selectedBars[0].time === "number" ? Number(k) : k;
       return {
         time,
         position: hasHigh ? "aboveBar" : "belowBar",
-        color: turns.colors[item.code],
+        color: item.isModel ? "#b49bff" : turns.colors[item.code],
         shape: hasHigh ? "arrowDown" : "arrowUp",
         text: items.map(p => p.code).join("/"),
         size: major ? 2 : 1,
@@ -511,6 +519,12 @@
     showTurnLabels = !showTurnLabels;
     event.currentTarget.classList.toggle("active", showTurnLabels);
     event.currentTarget.setAttribute("aria-pressed", String(showTurnLabels));
+    renderTurnMarkers();
+  });
+  document.getElementById("show-model-signals")?.addEventListener("click", event => {
+    showModelSignals = !showModelSignals;
+    event.currentTarget.classList.toggle("active", showModelSignals);
+    event.currentTarget.setAttribute("aria-pressed", String(showModelSignals));
     renderTurnMarkers();
   });
   document.getElementById("show-turn-windows")?.addEventListener("click", event => {
