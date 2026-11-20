@@ -120,6 +120,173 @@
   const sma20 = chart.addSeries(library.LineSeries, { color: "#f2b45e", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, visible: false });
   const sma50 = chart.addSeries(library.LineSeries, { color: "#83a7ff", lineWidth: 1, priceLineVisible: false, lastValueVisible: false, visible: false });
 
+
+  // User-labeled turning points and exploratory, non-validated time windows.
+  const turns = window.SPX_TURNING;
+  const bandHost = document.createElement("div");
+  bandHost.className = "spx-turn-band-host";
+  surface.appendChild(bandHost);
+  let showTurnLabels = true;
+  let showTurnWindows = true;
+  let candleMarkers = null;
+  let historicalMarkers = null;
+  let futureCount = 0;
+  let futureDates = [];
+  let projectionPaintPending = false;
+
+  function utcDay(date) {
+    return Date.parse(date + "T12:00:00Z");
+  }
+  function nextSessionDates(lastDate, maxDate) {
+    const out = [];
+    let date = new Date(lastDate + "T12:00:00Z");
+    while (true) {
+      date.setUTCDate(date.getUTCDate() + 1);
+      const key = date.toISOString().slice(0, 10);
+      if (key > maxDate) break;
+      if (date.getUTCDay() !== 0 && date.getUTCDay() !== 6) out.push(key);
+    }
+    return out;
+  }
+  function nearestBarDate(eventDate, bars, resolution) {
+    if (!bars.length) return null;
+    let key = eventDate;
+    if (resolution === "1W") key = weekStart(eventDate);
+    if (resolution === "1M" || resolution === "HIST") key = eventDate.slice(0, 7) + "-01";
+    if (resolution === "1D" || resolution === "1W" || resolution === "1M" || resolution === "HIST") {
+      if (bars.some(bar => bar.time === key)) return key;
+      // Closed-market event dates map to the following session, never silently to a distant bar.
+      if (resolution === "1D") {
+        const next = bars.find(bar => bar.time > key && utcDay(bar.time) - utcDay(key) <= 4 * 86400000);
+        return next ? next.time : null;
+      }
+      return null;
+    }
+    // Intraday events apply only if intraday bars cover the nominated date.
+    const match = bars.find(bar => new Date(bar.time * 1000).toLocaleDateString("en-CA",
+      { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }) === key);
+    return match ? match.time : null;
+  }
+  function renderTurnMarkers() {
+    if (!turns || !library.createSeriesMarkers) return;
+    const historical = interval === "HIST";
+    const target = historical ? historyLine : candles;
+    if (historical && candleMarkers) candleMarkers.setMarkers([]);
+    if (!historical && historicalMarkers) historicalMarkers.setMarkers([]);
+    if (!showTurnLabels) {
+      if (candleMarkers) candleMarkers.setMarkers([]);
+      if (historicalMarkers) historicalMarkers.setMarkers([]);
+      return;
+    }
+    const mapped = new Map();
+    for (const point of turns.points) {
+      const time = nearestBarDate(point.date, selectedBars, interval);
+      if (!time) continue;
+      if (!mapped.has(String(time))) mapped.set(String(time), []);
+      mapped.get(String(time)).push(point);
+    }
+    const markers = [...mapped].map(([k, items]) => {
+      const hasHigh = items.some(item => item.code.endsWith("H"));
+      const major = items.some(item => item.code.startsWith("J"));
+      const item = items.find(point => point.code.startsWith("J")) || items[0];
+      const time = typeof selectedBars[0].time === "number" ? Number(k) : k;
+      return {
+        time,
+        position: hasHigh ? "aboveBar" : "belowBar",
+        color: turns.colors[item.code],
+        shape: hasHigh ? "arrowDown" : "arrowUp",
+        text: items.map(p => p.code).join("/"),
+        size: major ? 2 : 1,
+      };
+    }).sort((a, b) => epoch(a.time) - epoch(b.time));
+    if (historical) {
+      if (!historicalMarkers) historicalMarkers = library.createSeriesMarkers(target, markers);
+      else historicalMarkers.setMarkers(markers);
+    } else {
+      if (!candleMarkers) candleMarkers = library.createSeriesMarkers(target, markers);
+      else candleMarkers.setMarkers(markers);
+    }
+  }
+  function renderWindowSummary() {
+    const area = document.getElementById("turning-watch-readout");
+    if (!area || !turns) return;
+    const latestAvailable = day.at(-1).time;
+    area.textContent = "";
+    const header = document.createElement("strong");
+    header.textContent = "NEXT TIMING WINDOW · " + turns.latest.code + " " + turns.pretty(turns.latest.date);
+    area.appendChild(header);
+    for (const window of turns.windows) {
+      const entry = document.createElement("span");
+      let phase = latestAvailable < window.from ? "upcoming" : latestAvailable > window.to ? "elapsed" : "watch period";
+      entry.textContent = window.next + ": " + turns.pretty(window.from) + " – " +
+        turns.pretty(window.to) + " (" + phase + ")";
+      area.appendChild(entry);
+    }
+    const caution = document.createElement("small");
+    caution.textContent = "Experimental calendar-day windows from 13 user-selected dates; not statistically validated, not confirmed price pivots.";
+    area.appendChild(caution);
+  }
+  function repaintTurnWindows() {
+    bandHost.replaceChildren();
+    if (!turns || !showTurnWindows || interval === "HIST" ||
+        !["1D", "1W", "1M"].includes(interval)) return;
+    const timeScale = chart.timeScale();
+    const size = surface.clientWidth;
+    for (const w of turns.windows) {
+      const startTime = nearestBarDate(w.from, selectedBars.concat(futureDates.map(time => ({ time }))), interval) ||
+        (interval === "1D" ? futureDates.find(time => time >= w.from) : null);
+      const endTime = nearestBarDate(w.to, selectedBars.concat(futureDates.map(time => ({ time }))), interval) ||
+        (interval === "1D" ? [...futureDates].reverse().find(time => time <= w.to) : null);
+      // Weekly/monthly periods may be represented by their first calendar date.
+      const startKey = interval === "1W" ? weekStart(w.from) :
+        interval === "1M" ? w.from.slice(0, 7) + "-01" : startTime;
+      const endKey = interval === "1W" ? weekStart(w.to) :
+        interval === "1M" ? w.to.slice(0, 7) + "-01" : endTime;
+      if (!startKey || !endKey) continue;
+      const x1 = timeScale.timeToCoordinate(startKey);
+      const x2 = timeScale.timeToCoordinate(endKey);
+      if (!Number.isFinite(x1) || !Number.isFinite(x2)) continue;
+      const halfBar = Math.abs(timeScale.timeToCoordinate(selectedBars.at(-1).time) -
+        timeScale.timeToCoordinate(selectedBars.at(-2).time)) / 2 || 3;
+      const left = Math.max(0, Math.min(x1, x2) - halfBar);
+      const right = Math.min(size, Math.max(x1, x2) + halfBar);
+      if (right <= left) continue;
+      const element = document.createElement("div");
+      element.className = "spx-turn-band " + (w.next.endsWith("H") ? "high-watch" : "low-watch");
+      element.style.left = left + "px";
+      element.style.width = Math.max(2, right - left) + "px";
+      element.title = w.next + " experimental window " + w.from + " to " + w.to +
+        " | " + w.evidence;
+      const text = document.createElement("span");
+      text.textContent = w.next + " WATCH";
+      element.appendChild(text);
+      bandHost.appendChild(element);
+    }
+  }
+  function scheduleTurnWindowPaint() {
+    if (projectionPaintPending) return;
+    projectionPaintPending = true;
+    requestAnimationFrame(() => {
+      projectionPaintPending = false;
+      repaintTurnWindows();
+    });
+  }
+  function setupForecastSpace(bars, resolution) {
+    futureDates = [];
+    futureCount = 0;
+    if (!turns || !["1D", "1W", "1M"].includes(resolution) || !bars.length) return bars;
+    const lastDate = bars.at(-1).time;
+    const latestWindow = turns.windows.at(-1);
+    const limit = turns.addDays(latestWindow.to, 10);
+    if (limit <= lastDate) return bars;
+    const sessions = nextSessionDates(lastDate, limit);
+    if (resolution === "1D") futureDates = sessions;
+    else if (resolution === "1W") futureDates = [...new Set(sessions.map(weekStart))].filter(t => t > lastDate);
+    else futureDates = [...new Set(sessions.map(t => t.slice(0, 7) + "-01"))].filter(t => t > lastDate);
+    futureCount = futureDates.length;
+    return bars.concat(futureDates.map(time => ({ time })));
+  }
+
   function simpleMovingAverage(bars, n) {
     let sum = 0;
     return bars.flatMap((bar, i) => {
@@ -221,7 +388,9 @@
     sma50.applyOptions({ visible: averages[50] });
     changeLogScale(false);
     lookups = new Map(selectedBars.map((bar) => [timeKey(bar.time), bar]));
-    candles.setData(selectedBars);
+    candles.setData(setupForecastSpace(selectedBars, interval));
+    renderTurnMarkers();
+    scheduleTurnWindowPaint();
     line.setData(selectedBars.map((bar) => ({ time: bar.time, value: bar.close })));
     sma20.setData(simpleMovingAverage(selectedBars, 20));
     sma50.setData(simpleMovingAverage(selectedBars, 50));
@@ -257,6 +426,10 @@
     sma50.setData([]);
     historyLine.setData(historyBars);
     historyLine.applyOptions({ visible: true });
+    futureDates = [];
+    futureCount = 0;
+    renderTurnMarkers();
+    scheduleTurnWindowPaint();
     chart.timeScale().applyOptions({ timeVisible: false, secondsVisible: false });
     changeLogScale(true);
     toggleButtons(intervalButtons, "interval", "HIST");
@@ -332,6 +505,20 @@
     });
   }
   new MutationObserver(applyPalette).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
-  new ResizeObserver(() => chart.resize(surface.clientWidth, surface.clientHeight)).observe(surface);
+  new ResizeObserver(() => { chart.resize(surface.clientWidth, surface.clientHeight); scheduleTurnWindowPaint(); }).observe(surface);
+  chart.timeScale().subscribeVisibleLogicalRangeChange(scheduleTurnWindowPaint);
+  document.getElementById("show-turn-labels")?.addEventListener("click", event => {
+    showTurnLabels = !showTurnLabels;
+    event.currentTarget.classList.toggle("active", showTurnLabels);
+    event.currentTarget.setAttribute("aria-pressed", String(showTurnLabels));
+    renderTurnMarkers();
+  });
+  document.getElementById("show-turn-windows")?.addEventListener("click", event => {
+    showTurnWindows = !showTurnWindows;
+    event.currentTarget.classList.toggle("active", showTurnWindows);
+    event.currentTarget.setAttribute("aria-pressed", String(showTurnWindows));
+    scheduleTurnWindowPaint();
+  });
+  renderWindowSummary();
   setInterval("1D");
 })();
