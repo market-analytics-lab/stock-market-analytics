@@ -13,7 +13,7 @@
   <script src="./spx-ohlc-data.js?asof=2026-11-20" defer></script>
   <script src="./spx-history-data.js?asof=2026-11-20" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.0.9/dist/lightweight-charts.standalone.production.js" defer></script>
-  <script src="./spx-turning-points.js?v=20261120" defer></script>
+  <script src="./spx-turning-points.js?v=20261123-six-labels" defer></script>
   <script src="./spx-vix-data.js?asof=2026-11-20" defer></script>
   <script src="./spx-breadth-data.js?asof=2026-11-20" defer></script>
   <script src="./spx-pattern-engine.js?v=20261120-v2" defer></script>
@@ -22,8 +22,9 @@
   <script src="./spx-pattern-dashboard.js?v=20261120-v2" defer></script>
   <script src="./spx-pattern-context.js?v=20261120-v2" defer></script>
   <script src="./spx-long-ohlc.js?asof=2026-11-20-backfill" defer></script>
-  <script src="./spx-candle-miner.js?v=20261123-historic-labels" defer></script>
-  <script src="./spx-candle-explorer.js?v=20261123-labels-v2" defer></script>
+  <script src="./spx-candle-report.js?v=20261123-six-labels" defer></script>
+  <script src="./spx-candle-miner.js?v=20261123-offline-study" defer></script>
+  <script src="./spx-candle-explorer.js?v=20261123-six-labels" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -139,10 +140,10 @@
         <div class="spx-turning-toolbar" aria-label="Turning-point model controls">
           <div class="spx-turning-controls">
             <strong>SPX High / Low Study</strong>
-            <button type="button" class="tv-action active" id="show-turn-labels" aria-pressed="true">Show 13 reference turns</button>
+            <button type="button" class="tv-action active" id="show-turn-labels" aria-pressed="true">Show labeled turning points</button>
             <button type="button" class="tv-action active" id="show-turn-windows" aria-pressed="true">Show forecast windows</button>
             <button type="button" class="tv-action" id="show-model-signals" aria-pressed="false" title="Historical out-of-sample top-decile research rankings; cutoff evaluated retrospectively and is not a historical trade signal">Model backtest markers</button>
-            <span class="spx-turning-legend"><b style="color:#f8a23d">dH</b> Moderate high · <b style="color:#31c88a">dL</b> Moderate low · <b style="color:#f16475">JH</b> Major high · <b style="color:#6397ff">JL</b> Major low</span>
+            <span class="spx-turning-legend"><b style="color:#f8a23d">dH</b> Moderate high · <b style="color:#31c88a">dL</b> Moderate low · <b style="color:#f16475">JH</b> Major high · <b style="color:#6397ff">JL</b> Major low · <b style="color:#b86cf4">RH</b> Bear high · <b style="color:#23c9c9">RL</b> Bear low</span>
           </div>
           <div id="turning-watch-readout" class="spx-turning-watch" role="status" aria-live="polite">Loading turning-point calendar…</div>
           <small class="spx-model-disclaimer">Purple M-H / M-L markers (optional) identify the top historical prediction scores. Their decile cutoff is retrospective; they are not evidence of real-time trade execution.</small>
@@ -189,6 +190,8 @@
           <button type="button" data-candle-target="dL" aria-pressed="false">dL · Moderate low</button>
           <button type="button" data-candle-target="JH" aria-pressed="false">JH · Major high</button>
           <button type="button" class="active" data-candle-target="JL" aria-pressed="true">JL · Major low</button>
+          <button type="button" data-candle-target="RH" aria-pressed="false">RH · Bear-market high</button>
+          <button type="button" data-candle-target="RL" aria-pressed="false">RL · Bear-market low</button>
         </div>
         <div class="candle-explorer-toolbar" aria-label="Separate chart navigation">
           <span class="tool-name">VISIBLE RANGE</span>
@@ -219,6 +222,8 @@
             <option value="dL">dL · Moderate low</option>
             <option value="JH">JH · Major high</option>
             <option value="JL">JL · Major low</option>
+            <option value="RH">RH · Bear-market high</option>
+            <option value="RL">RL · Bear-market low</option>
           </select>
           <button type="button" id="candle-label-toggle" aria-pressed="false">Click candle to label: Off</button>
           <button type="button" id="candle-label-undo">Undo last</button>
@@ -234,15 +239,18 @@
           <strong style="color:#31c88a">dL</strong> moderate low ·
           <strong style="color:#f16475">JH</strong> major high ·
           <strong style="color:#6397ff">JL</strong> major low ·
+          <strong style="color:#b86cf4">RH</strong> bear-market high ·
+          <strong style="color:#23c9c9">RL</strong> bear-market low ·
           <strong style="color:#bca4ff">P• / T•</strong> discovered-pattern occurrence (training / later holdout).
         </p>
-        <div id="candle-explorer-status" class="candle-explorer-status">Scanning genuine daily SPX OHLC candles…</div>
+        <div id="candle-explorer-status" class="candle-explorer-status">Loading multidecade SPX candle-pattern results…</div>
+        <p id="candle-label-summary" class="candle-explorer-status" role="status">Checking historical labels…</p>
         <div id="candle-explorer-coverage" class="candle-explorer-coverage"></div>
         <div id="candle-explorer-current" class="candle-explorer-current"></div>
         <div id="candle-explorer-selected" class="candle-explorer-selected"></div>
         <h3>Discovered precursor rules, ranked on earlier data</h3>
         <div id="candle-explorer-patterns" class="candle-explorer-patterns"></div>
-        <p class="candle-explorer-note"><strong>Critical limitation:</strong> This searches tens of thousands of possible patterns against just 13 user-labeled turns. Apparent high training hit rates can be coincidence. Some target types have zero later labeled events; their holdout scores cannot establish predictive accuracy. The feature search does not use future OHLC values, but the target label is defined using the following 1–3 trading sessions. Do not treat rankings or current matches as calibrated odds or buy/sell signals.</p>
+        <p class="candle-explorer-note"><strong>Critical limitation:</strong> This searches tens of thousands of possible patterns against user-labeled turns. Apparent high training hit rates can be coincidence. RH/RL await bear-market labels; their holdout scores cannot establish predictive accuracy. The feature search does not use future OHLC values, but the target label is defined using the following 1–3 trading sessions. Do not treat rankings or current matches as calibrated odds or buy/sell signals.</p>
       </section>
 
       <section id="pattern-research" class="pattern-research" aria-label="SPX historical pattern research and walk-forward backtest"></section>
