@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'backfill_spx_daily.py'
+      - 'backfill_spx_test.py'
+      - 'refresh_spx_long.py'
       - '.github/workflows/backfill-spx-daily.yml'
 
 permissions:
