@@ -251,15 +251,15 @@ const payload={
   excludedEarlyWicks:"OHLC flat observations excluded; study begins 1997 with reliable high/low records.",
   caution:"Thousands of correlated patterns fit to user-defined turning points; descriptive holdout counts are not calibrated probabilities or trading evidence."
 };
-const body="/* Precomputed real daily SPX candle discovery, 1997+.\n"+
+const scriptBody="/* Precomputed real daily SPX candle discovery, 1997+.\n"+
   " * Training pre-2019; holdout 2019-present; labels may be subjective.\n"+
   " * Generated reproducibly via node generate_spx_candle_report.cjs.\n"+
   " */\nwindow.SPX_CANDLE_REPORT = "+JSON.stringify(payload)+";\n";
 const path="spx-candle-report.js";
-if(fs.existsSync(path)&&fs.readFileSync(path,"utf8")===body){
+if(fs.existsSync(path)&&fs.readFileSync(path,"utf8")===scriptBody){
   console.log("SPX pattern report unchanged:",payload.asOf);
 }else{
-  fs.writeFileSync(path,body,"utf8");
+  fs.writeFileSync(path,scriptBody,"utf8");
 }
 console.log("SPX model generated:",payload.candidatesGenerated,"rules",N,
   "dates",payload.dateStart,payload.dateEnd);
