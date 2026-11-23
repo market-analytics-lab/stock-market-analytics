@@ -18,7 +18,7 @@ concurrency:
 jobs:
   refresh:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     steps:
       - name: Check out main branch
         uses: actions/checkout@v4
@@ -40,6 +40,9 @@ jobs:
       - name: Recompute historical candlestick study on newly completed SPX candles
         run: node generate_spx_candle_report.cjs
 
+      - name: Recompute expanded candle-shape, reversal, wick and volatility models
+        run: node spx-candle-advanced.cjs
+
       - name: Refresh VIX volatility and S&P 500 market breadth context
         run: python refresh_context.py
 
@@ -47,15 +50,15 @@ jobs:
         id: publish
         shell: bash
         run: |
-          if git diff --quiet -- spx-ohlc-data.js spx-history-data.js spx-long-ohlc.js spx-candle-report.js spx-vix-data.js spx-breadth-data.js index.html; then
+          git add spx-ohlc-data.js spx-history-data.js spx-long-ohlc.js spx-candle-report.js spx-candle-advanced-data.js spx-vix-data.js spx-breadth-data.js index.html
+          if git diff --cached --quiet; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No newer SPX/VIX/breadth datasets available."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add spx-ohlc-data.js spx-history-data.js spx-vix-data.js spx-breadth-data.js index.html
-          git commit -m "chore: refresh SPX, VIX and market breadth data"
+          git commit -m "chore: refresh SPX, candle models, VIX and market breadth data"
           git push origin HEAD:main
           echo "changed=true" >> "$GITHUB_OUTPUT"
 
