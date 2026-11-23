@@ -8,6 +8,12 @@ on:
       - 'spx-candle-*.js'
       - 'spx-candle-*.css'
       - 'spx-candle-test.cjs'
+      - 'spx-long-ohlc.js'
+      - 'spx-long-test.cjs'
+      - 'backfill_spx_daily.py'
+      - 'backfill_spx_test.py'
+      - 'repair_spx_gap.py'
+      - 'refresh_spx_long.py'
       - 'refresh_context.py'
       - 'refresh_context_test.py'
       - '.github/workflows/test-spx-pattern.yml'
@@ -40,5 +46,6 @@ jobs:
         run: |
           node spx-pattern-test.cjs
           node spx-candle-test.cjs
+          node spx-long-test.cjs
       - name: Verify external context importer
-        run: python -m unittest refresh_context_test.py
+        run: python -m unittest refresh_context_test.py backfill_spx_test.py
