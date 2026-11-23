@@ -41,35 +41,32 @@ The separate [SPX Candlestick Pattern Explorer](https://market-analytics-lab.git
 
 ### Pattern model limitations and controls
 
-The candlestick miner is **now rebuilt on 7,584 real SPX daily records covering 1996–2026**. Its first 1997 research labels came from the latest collection of 146 user-supplied dates. Those records were added to the prior 13 labels, producing **159 distinct labeled SPX turning points** across six categories:
+The candlestick miner is **now rebuilt on 7,584 real SPX daily records covering 1996–2026**. Its first 1997 research labels came from the two collections of 162 user-supplied historical dates. Those records were added to the prior 13 labels, producing **175 distinct labeled SPX turning points** across six categories:
 
 | Label | Interpretation | User-supplied examples |
 |---|---|---:|
-| dH | Moderate high | 58 |
-| dL | Moderate low | 58 |
+| dH | Moderate high | 63 |
+| dL | Moderate low | 63 |
 | JH | Major high | 22 |
 | JL | Major low | 21 |
-| RH | Bear-market high | 0 — awaiting dates |
-| RL | Bear-market low | 0 — awaiting dates |
+| RH | Bear-market high | 3 |
+| RL | Bear-market low | 3 |
 
 The user defines the turning-point types and dates; these are subjective **closing-price** event labels, not independently audited exact-extremum bars.
 
 The offline generator `generate_spx_candle_report.cjs` tests **43,266 candidate wick/body/sequence conditions and combinations** from true daily OHLC. It trains on **5,533 candidate decision sessions during 1997–2018**, then evaluates the selected rules on **1,981 strictly later decision sessions (2019–2026)**. The three-session forward event horizon is separated from the training/holdout boundary by a three-session embargo. Outcomes from holdout sessions do **not** select, rank, or tune the training winners. The generator is rerun on label changes and on the existing daily SPX data refresh; browsers load the precomputed `spx-candle-report.js` rather than scanning 43,266 rules live.
 
-### Illustrative discoveries and caution
+### Model interpretation and bear-market classes
 
-| Label | Best training example (selected from 43,266) | Earlier winning sessions | Later held-out winning sessions |
-|---|---|---|---|
-| dH | Upper wick ≥60% of range and 20-day closing high | 7 / 44 | 1 / 22 |
-| dL | Close below 20-day SMA; gap up two days prior | 9 / 66 | 7 / 83 |
-| JH | Outside bar one day prior; gap up two days prior | 4 / 24 | 0 / 41 |
-| JL | 20-day closing low; inside bar two days prior | 7 / 53 | 0 / 11 |
+The chart displays each target's actual top-ranked candlestick rules, earlier training hits, later out-of-sample hits, and **distinct turns covered**. These results are recomputed from the latest permanent labels, not copied from an earlier report.
 
-"Winning sessions" count pattern days that preceded **a user-labeled event in one of the next three trading days**. Multiple winning sessions can refer to the same future turn; **distinct events covered** are also shown on the chart. Results are exploratory and may be strongly affected by multiple testing, regime changes, selection bias and the small number of major events.
+**Bear markets:** RH is recorded on March 24, 2000; October 9, 2007; and January 3, 2022. RL is recorded on October 9, 2002; March 9, 2009; and October 12, 2022. For **each** bear category, two earlier turning points are in the 1997–2018 training period and the 2022 example is in the later holdout. Candidate similarities are illustrative only: two training examples are **far too few for meaningful statistical calibration**. Rankings for RH/RL must be labeled very-small-sample, not validated predictions.
 
-**RH and RL are empty new classes**: their controls, annotation colors and export functionality are ready, but no bear-market-high/low rankings or probabilities are shown until the user supplies RH/RL dates. Additional annotations are saved locally in the user's browser until the **Copy my dates** list is shared in chat; only then are they incorporated into the permanent GitHub model.
+**One flag per date:** Permanent labels are deduplicated by date. In the second chart, dates already committed to GitHub supersede matching browser-local annotations and pattern dots. Browser-local duplicates are cleaned on load, and clicking an already permanently labeled candle does not add another flag. Pattern overlays are **off by default** and can be enabled by selecting a discovered rule.
 
-The second chart supports one selected purple training/holdout pattern overlay at a time, colored arrows for all 159 historical user labels, zoom, crosshair, logarithmic scale, and 1957+ date navigation. No 1871 monthly observations are treated as daily candlesticks; close-only/flat older bars are excluded from wick-based mining.
+"Winning sessions" count pattern days that preceded **a user-labeled event in one of the next three trading days**. Multiple winning sessions can refer to the same future turn; distinct turning points covered are separately reported. Tens of thousands of hypothesis combinations imply substantial overfitting risk, and no pattern here has a demonstrated real-time trading edge.
+
+The second chart supports one selected purple training/holdout pattern overlay at a time, colored arrows for all 175 unique historical user labels, zoom, crosshair, logarithmic scale, and 1957+ date navigation. No 1871 monthly observations are treated as daily candlesticks; close-only/flat older bars are excluded from wick-based mining.
 
 **No model here has a validated trading edge.** The number of searched hypotheses is enormous relative to labeled turning points. A historical training winner is not a forecast, and the holdout is intended to reveal failures as well as successes.
 
