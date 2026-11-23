@@ -53,7 +53,13 @@
   // Historical backcasts are pre-1997 candidate-pattern coincidences, not
   // verified user labels, and never modify the stored historical database.
   const historicalBackcast=model.historicalBackcast||null;
-  let showBackcast=false,backcastFilter="core";
+  const advanced=model.advanced||null;
+  let showBackcast=false,backcastFilter="core",backcastEngine=advanced?"expanded":"original";
+  let showRecentExpanded=false;
+  function activeBackcast(){
+    if(backcastEngine==="expanded"&&advanced)return {candidates:advanced.pastSuggestions};
+    return historicalBackcast;
+  }
   function backcastAllowed(type){
     if(backcastFilter==="all")return true;
     if(backcastFilter==="core")return ["dH","dL","JH","JL"].includes(type);
@@ -69,14 +75,16 @@
   function backcastStatus(){
     const output=get("candle-backcast-count");
     if(!output)return;
-    const eligible=(historicalBackcast?.candidates||[]).filter(item=>backcastAllowed(item.code));
+    const active=activeBackcast();
+    const eligible=(active?.candidates||[]).filter(item=>backcastAllowed(item.code));
     const counts=Object.fromEntries(["dH","dL","JH","JL","RH","RL"].map(k=>[
       k,eligible.filter(x=>x.code===k).length
     ]));
-    output.textContent=historicalBackcast
+    output.textContent=active
       ?(showBackcast?"Visible":"Hidden")+" · "+eligible.length+
         " historical hypotheses ("+Object.entries(counts).filter(x=>x[1]).map(x=>x[0]+" "+x[1]).join(" · ")+
-        ") · signals 1–3 sessions ahead, not confirmed turns"
+        ") · "+(backcastEngine==="expanded"?"expanded 1,020-feature model":"original model")+
+        " · signals 1–3 sessions ahead, not confirmed turns"
       :"No retrospective research candidates are available yet.";
   }
   // One chart flag per trading date. The permanent GitHub labels take
@@ -153,8 +161,8 @@
     }
     // Optional 1962–1996 backward transfer. Circles marked "?"
     // distinguish guesses from the user's confirmed high/low arrows.
-    if(showBackcast&&historicalBackcast){
-      for(const suggestion of historicalBackcast.candidates){
+    if(showBackcast&&activeBackcast()){
+      for(const suggestion of activeBackcast().candidates){
         if(!backcastAllowed(suggestion.code)||!byDate.has(suggestion.date)||
           uniqueByDay.has(suggestion.date))continue;
         const type=suggestion.code;
@@ -162,6 +170,19 @@
           time:suggestion.date,
           position:type.endsWith("H")?"aboveBar":"belowBar",
           color:colors[type],shape:"circle",text:type+"?",size:1
+        });
+      }
+    }
+    // Separate optional recent model signals. "~" indicates a historical
+    // date when a JL-like precursor pattern FIRED, not a confirmed low.
+    if(showRecentExpanded&&advanced){
+      for(const suggestion of advanced.recentSuggestions){
+        if(!byDate.has(suggestion.date)||uniqueByDay.has(suggestion.date))continue;
+        const type=suggestion.code;
+        uniqueByDay.set(suggestion.date,{
+          time:suggestion.date,
+          position:type.endsWith("H")?"aboveBar":"belowBar",
+          color:colors[type],shape:"circle",text:type+"~",size:1
         });
       }
     }
@@ -255,12 +276,87 @@
       info.appendChild(node("small","","Purple P• = training occurrence (through 2018); T• = 2019+ holdout occurrence. Colored arrows = your historical labeled dates."));
     }
   }
+
+  function advancedStatus(){
+    const status=get("candle-expanded-recent-count");
+    if(!status)return;
+    if(!advanced){status.textContent="Expanded model unavailable or out of date.";return;}
+    const n=advanced.recentSuggestions.length;
+    status.textContent=(showRecentExpanded?"Visible":"Hidden")+" · "+n+
+      " model-only setup dates since 2025; circles use ~, never confirmed JL labels.";
+  }
+  function renderAdvanced(){
+    const output=get("candle-expanded-summary");
+    const panel=get("candle-expanded-table");
+    const info=get("candle-latest-jl");
+    if(!advanced){
+      if(output)output.textContent="Expanded study not loaded. The original model remains accessible.";
+      if(info)info.textContent="Last confirmed JL: "+
+        ((window.SPX_TURNING?.points||[]).filter(p=>p.code==="JL").at(-1)?.date||"none")+
+        ". New candidate model unavailable.";
+      if(panel)panel.replaceChildren();
+      return;
+    }
+    if(output)output.textContent=
+      advanced.featureCount.toLocaleString("en-US")+" automatic candle features across "+
+      advanced.distinctFamilies.length+" independent descriptor families generated "+
+      advanced.combinationCount.toLocaleString("en-US")+
+      " single and paired hypotheses. Features include hammers/stars within 2–34 sessions, "+
+      "wick clusters, failed breakouts, gap reversals, price extremes, candle run patterns, "+
+      "volatility shifts, trend extensions and combinations. Training "+advanced.samples.train+
+      " sessions (1997–2014), validation "+advanced.samples.validation+
+      " (2015–2018), untouched later test "+advanced.samples.holdout+
+      " (2019–2026). Pattern results are exploratory, not calibrated probabilities.";
+    if(panel){
+      panel.replaceChildren();
+      const table=node("table","candle-pattern-table");
+      const head=node("thead",""),heading=node("tr","");
+      ["Type","Newly discovered precursor pattern","1997–14 training","2015–18 validation","2019+ holdout"].forEach(x=>
+        heading.appendChild(node("th","",x)));
+      head.appendChild(heading);table.appendChild(head);
+      const body=node("tbody","");
+      for(const type of ["dH","dL","JH","JL"]){
+        for(const rule of advanced.studies[type].leaders.slice(0,3)){
+          const row=node("tr","");
+          row.appendChild(node("td","",type));
+          row.appendChild(node("td","",rule.name));
+          for(const key of ["training","validation","holdout"]){
+            const metric=rule[key];
+            row.appendChild(node("td","",
+              metric.hits+"/"+metric.fired+" precursor days ("+
+              (metric.rate===null?"no matches":(100*metric.rate).toFixed(1)+"%")+
+              "; "+metric.distinctTurns+" turns)"));
+          }
+          body.appendChild(row);
+        }
+      }
+      table.appendChild(body);panel.appendChild(table);
+    }
+    if(info){
+      info.replaceChildren();
+      const jl=advanced.latestJL;
+      info.appendChild(node("strong","","Last confirmed JL: "+(jl.lastConfirmedJL||"None")+" · "));
+      info.appendChild(node("span","",
+        "Most recent model-only JL setup: "+(jl.lastModelJLTrigger||"No recent trigger")+
+        " (NOT a confirmed JL, trigger precedes any potential turn by 1–3 sessions)."));
+      info.appendChild(node("small","",jl.status+" as of "+jl.mostRecentBar+
+        ". Latest candle matched "+jl.currentJLRuleMatches+"/"+jl.minimumVotes+
+        " required voting rules. The November 5 setup window has already expired."));
+      info.appendChild(node("small","","Independent legacy timing watch: "+
+        jl.calendarWatch.earliest+" through "+jl.calendarWatch.latest+
+        " after the October 6 JH. This is a hypothesis, not an established major-low date."));
+      info.appendChild(node("small","","If a new JL-like setup fires after a daily data refresh, "+
+        "its exact trigger date will appear here automatically; the actual JL date remains unconfirmed until identified."));
+    }
+    advancedStatus();
+  }
+
   function render(){
     if(!model.analysis[code].leaders.some(x=>x.id===id))id=model.analysis[code].leaders[0]?.id||null;
     for(const btn of shell.querySelectorAll("[data-candle-target]")){
       const on=btn.dataset.candleTarget===code;btn.classList.toggle("active",on);btn.setAttribute("aria-pressed",String(on));
     }
-    drawTable();textInfo();plotMarkers();
+    drawTable();textInfo();renderAdvanced();plotMarkers();
   }
   for(const button of shell.querySelectorAll("[data-candle-target]"))
     button.addEventListener("click",()=>{
@@ -284,8 +380,14 @@
 
   const hypothesisToggle=get("candle-backcast-toggle");
   const hypothesisFilter=get("candle-backcast-filter");
+  const engineSelect=get("candle-backcast-engine");
+  if(engineSelect)engineSelect.value=backcastEngine;
+  engineSelect?.addEventListener("change",event=>{
+    backcastEngine=event.currentTarget.value==="original"?"original":"expanded";
+    plotMarkers();backcastStatus();
+  });
   hypothesisToggle?.addEventListener("click",event=>{
-    if(!historicalBackcast){
+    if(!activeBackcast()){
       backcastStatus();return;
     }
     showBackcast=!showBackcast;
@@ -299,6 +401,13 @@
   hypothesisFilter?.addEventListener("change",event=>{
     backcastFilter=event.currentTarget.value||"core";
     plotMarkers();backcastStatus();
+  });
+  get("candle-expanded-recent-toggle")?.addEventListener("click",event=>{
+    showRecentExpanded=!showRecentExpanded;
+    event.currentTarget.classList.toggle("active",showRecentExpanded);
+    event.currentTarget.setAttribute("aria-pressed",String(showRecentExpanded));
+    event.currentTarget.textContent="Recent expanded-model setups: "+(showRecentExpanded?"On":"Off");
+    plotMarkers();advancedStatus();
   });
   get("candle-view-pre97")?.addEventListener("click",historicalFocus);
   backcastStatus();
