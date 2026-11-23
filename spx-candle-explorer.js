@@ -7,6 +7,16 @@
   if (!shell||!surface)return;
   const get=id=>document.getElementById(id);
   if(!model||!lib) {get("candle-explorer-status").textContent="Candle miner could not load.";return;}
+  // Historical chart data is intentionally separate from the candidate-rule
+  // miner: adding 70 years of unlabeled days must not swamp the 13 labeled turns.
+  const archive=window.SPX_LONG_OHLC;
+  const merged=new Map();
+  for(const r of archive?.daily||[])merged.set(r[0],{time:r[0],open:r[1],high:r[2],low:r[3],close:r[4]});
+  for(const b of model.daily)merged.set(b.time,b);
+  const full=[...merged.values()].sort((a,b)=>a.time.localeCompare(b.time));
+  const lastDate=full.at(-1).time, firstDate=full[0].time;
+  const flatCount=full.filter(b=>Math.abs(b.high-b.low)<=.01).length;
+  const firstWickDate=full.find(b=>b.high-b.low>.01)?.time||null;
   const colors={dH:"#f8a23d",dL:"#31c88a",JH:"#f16475",JL:"#6397ff"};
   const p=v=>v===null?"N/A":(v*100).toFixed(1)+"%";
   const node=(tag,cl,value)=>{
@@ -26,10 +36,19 @@
     upColor:"#26bb9a",downColor:"#ef626e",borderVisible:false,
     wickUpColor:"#26bb9a",wickDownColor:"#ef626e",priceLineVisible:true
   });
-  candles.setData(model.daily);
+  candles.setData(full);
+  // In older vendor periods the record often has O=H=L=C.
+  // A separate closing-level line is used over that close-only area:
+  // no wicks are manufactured for those sessions.
+  const legacyLine=chart.addSeries(lib.LineSeries,{
+    color:"#a8a9ff",lineWidth:1,priceLineVisible:false,
+    lastValueVisible:false,title:"Older index closing level (flat OHLC archive)"
+  });
+  const legacy=full.filter(b=>firstWickDate && b.time<firstWickDate).map(b=>({time:b.time,value:b.close}));
+  if(legacy.length)legacyLine.setData(legacy);
   const markerApi=typeof lib.createSeriesMarkers==="function"?lib.createSeriesMarkers(candles,[]):null;
-  const byDate=new Map(model.daily.map(b=>[b.time,b]));
-  let code="JL",id=null,showSignals=true;
+  const byDate=new Map(full.map(b=>[b.time,b]));
+  let code="JL",id=null,showSignals=true,logScale=false;
   function paintTheme(){
     const light=document.documentElement.dataset.theme==="light";
     chart.applyOptions({layout:{background:{type:"solid",color:light?"#fff":"#101a2a"},
@@ -41,10 +60,10 @@
   }
   function setRange(key){
     if(key==="ALL"){chart.timeScale().fitContent();return;}
-    const days={ "1M":31,"3M":93,"6M":186,"1Y":366}[key]||186;
-    const firstDate=new Date(Date.parse(model.dateEnd+"T12:00:00Z")-86400000*days).toISOString().slice(0,10);
-    const first=model.daily.findIndex(b=>b.time>=firstDate);
-    chart.timeScale().setVisibleLogicalRange({from:Math.max(-.5,first-.5),to:model.daily.length+3});
+    const days={ "1M":31,"3M":93,"6M":186,"1Y":366,"5Y":1827,"10Y":3653,"25Y":9132,"50Y":18263}[key]||186;
+    const firstDateCutoff=new Date(Date.parse(lastDate+"T12:00:00Z")-86400000*days).toISOString().slice(0,10);
+    const first=full.findIndex(b=>b.time>=firstDateCutoff);
+    chart.timeScale().setVisibleLogicalRange({from:Math.max(-.5,first-.5),to:full.length+3});
   }
   function plotMarkers(){
     if(!markerApi)return;
@@ -88,16 +107,18 @@
   function textInfo(){
     const target=model.analysis[code],b=target.baseline;
     get("candle-explorer-status").textContent=
-      model.candidatesGenerated.toLocaleString("en-US")+" candidate rules searched across "+
-      model.barCount+" genuine SPX daily candles ("+model.dateStart+" to "+model.dateEnd+"). "+
-      "Earlier training < "+model.splitDate+"; later dates are held out. Patterns fire 1–3 trading sessions before a user-supplied "+code+" event.";
+      full.length.toLocaleString("en-US")+" archived index trading dates displayed ("+firstDate+" to "+lastDate+"). "+
+      "The pattern miner currently evaluates "+model.candidatesGenerated.toLocaleString("en-US")+
+      " rules over the "+model.barCount+" labeled-era daily candles ("+model.dateStart+" to "+model.dateEnd+
+      "), not on unlabeled early decades. Training < "+model.splitDate+
+      "; holdout later. Each signal looks 1–3 trading sessions ahead for a "+code+" event." ;
     get("candle-explorer-coverage").textContent=
       "Earlier: "+model.trainCount+" decision sessions, "+b.trainLabels+" labeled "+code+" dates ("+b.trainWindows+
       " matching precursor sessions). Later: "+model.testCount+" sessions, "+b.testLabels+
       " labeled "+code+" dates ("+b.testWindows+" precursor sessions). Earlier baseline "+p(b.train)+".";
     const matches=model.latestMatches[code];
     const last=get("candle-explorer-current");last.replaceChildren();
-    last.appendChild(node("strong","","Latest candle ("+model.dateEnd+"): "));
+    last.appendChild(node("strong","","Latest mined candle ("+model.dateEnd+"): "));
     last.appendChild(node("span","",matches.length+
       " of top 10 retrospectively ranked "+code+" precursor rules match."));
     last.appendChild(node("small","","Not a statistical probability, trade signal, or confirmed high/low."));
@@ -133,6 +154,31 @@
     event.currentTarget.setAttribute("aria-pressed",String(showSignals));plotMarkers();
   });
   get("candle-fit")?.addEventListener("click",()=>chart.timeScale().fitContent());
+  const dateInput=get("candle-date-jump");
+  if(dateInput){dateInput.min=firstDate;dateInput.max=lastDate;dateInput.value=lastDate;}
+  function goToDate(){
+    if(!dateInput||!dateInput.value)return;
+    const selected=dateInput.value;
+    let idx=full.findIndex(b=>b.time>=selected);
+    if(idx<0)idx=full.length-1;
+    chart.timeScale().setVisibleLogicalRange({
+      from:Math.max(-1,idx-70),to:Math.min(full.length+2,idx+70)
+    });
+    const bar=full[idx];
+    get("candle-explorer-crosshair").textContent=
+      "Historical SPX "+bar.time+": O "+bar.open.toFixed(2)+" H "+
+      bar.high.toFixed(2)+" L "+bar.low.toFixed(2)+" C "+bar.close.toFixed(2);
+  }
+  get("candle-date-go")?.addEventListener("click",goToDate);
+  dateInput?.addEventListener("change",goToDate);
+  get("candle-log-scale")?.addEventListener("click",event=>{
+    logScale=!logScale;
+    chart.priceScale("right").applyOptions({
+      mode:logScale?lib.PriceScaleMode.Logarithmic:lib.PriceScaleMode.Normal
+    });
+    event.currentTarget.classList.toggle("active",logScale);
+    event.currentTarget.setAttribute("aria-pressed",String(logScale));
+  });
   get("candle-zoom-in")?.addEventListener("click",()=>{
     const scale=chart.timeScale(),spacing=scale.options().barSpacing;
     scale.applyOptions({barSpacing:Math.min(70,spacing*1.5)});
@@ -145,12 +191,20 @@
     const t=param.time;
     const key=typeof t==="string"?t:t&&typeof t==="object"?
       [t.year,String(t.month).padStart(2,"0"),String(t.day).padStart(2,"0")].join("-"):null;
-    const bar=byDate.get(key)||model.daily.at(-1);
+    const bar=byDate.get(key)||full.at(-1);
     get("candle-explorer-crosshair").textContent=bar.time+" · O "+bar.open.toFixed(2)+
       " H "+bar.high.toFixed(2)+" L "+bar.low.toFixed(2)+" C "+bar.close.toFixed(2);
   });
   if(typeof ResizeObserver==="function")new ResizeObserver(()=>chart.resize(surface.clientWidth,surface.clientHeight)).observe(surface);
   if(typeof MutationObserver==="function")new MutationObserver(paintTheme).observe(document.documentElement,{attributes:true,attributeFilter:["data-theme"]});
+  const quality=get("candle-historical-quality");
+  if(quality)quality.textContent=
+    "Historical depth: "+full.length.toLocaleString("en-US")+
+    " days, "+firstDate+" through "+lastDate+
+    ". "+flatCount.toLocaleString("en-US")+" historical records have zero reported O–H–L–C range. "+
+    "Such observations are price-level references, NOT genuine wick measurements. "+
+    "First archived non-flat day: "+(firstWickDate||"unavailable")+
+    ". Prior to additional manual labels, pattern discovery remains restricted to recent 2024+ observations.";
   paintTheme();render();setRange("6M");
-  const b=model.daily.at(-1);get("candle-explorer-crosshair").textContent=b.time+" · O "+b.open.toFixed(2)+" H "+b.high.toFixed(2)+" L "+b.low.toFixed(2)+" C "+b.close.toFixed(2);
+  const b=full.at(-1);get("candle-explorer-crosshair").textContent=b.time+" · O "+b.open.toFixed(2)+" H "+b.high.toFixed(2)+" L "+b.low.toFixed(2)+" C "+b.close.toFixed(2);
 })();
