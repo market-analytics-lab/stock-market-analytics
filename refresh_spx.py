@@ -184,13 +184,13 @@ def render_monthly(data: dict) -> str:
 def versioned_index(html: str, as_of: str) -> str:
     # New URL per trading day bypasses browser/CDN caches of static JS datasets.
     updated = html
-    for filename in ("spx-ohlc-data.js", "spx-history-data.js"):
+    for filename in ("spx-ohlc-data.js", "spx-history-data.js", "spx-candle-report.js"):
         pattern = rf'(src="./{re.escape(filename)})(?:\?[^"]*)?(")'
         updated, count = re.subn(
             pattern, lambda match: f"{match.group(1)}?asof={as_of}{match.group(2)}",
             updated, count=1,
         )
-        if count != 1:
+        if count != 1 and filename != "spx-candle-report.js":
             raise ValueError(f"Missing script element in index.html: {filename}")
     return updated
 
