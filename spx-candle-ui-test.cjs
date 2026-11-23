@@ -32,7 +32,9 @@ for(const id of [
   "candle-fit","candle-zoom-out","candle-zoom-in",
   "candle-overlay-toggle","candle-label-type","candle-label-toggle",
   "candle-label-undo","candle-label-copy","candle-label-output",
-  "candle-label-status","candle-label-summary"
+  "candle-label-status","candle-label-summary",
+  "candle-backcast-toggle","candle-backcast-filter",
+  "candle-backcast-count","candle-view-pre97"
 ])element(id);
 const targets=["dH","dL","JH","JL","RH","RL"].map(code=>{
   const node=element("target-"+code);
@@ -45,6 +47,7 @@ const ranges=["1M","3M","6M","1Y","5Y","10Y","25Y","50Y","ALL"].map(key=>{
 elements.get("candle-explorer").querySelectorAll=query=>
   query.includes("data-candle-target")?targets:ranges;
 elements.get("candle-label-type").value="RH";
+elements.get("candle-backcast-filter").value="core";
 
 const initialLocal=[
   {date:"2000-03-24",code:"RH"},
@@ -118,6 +121,36 @@ assert.deepEqual(JSON.parse(local.get("spx-additional-turns-v1")),
 assert.equal(currentMarkers.filter(m=>m.time==="2000-03-24").length,1);
 assert.equal(currentMarkers.find(m=>m.time==="2000-03-24").text,"RH");
 assert.equal(currentMarkers.find(m=>m.time==="2023-01-03").text,"dH*");
+assert.equal(ctx.window.SPX_CANDLE_PATTERNS.historicalBackcast.candidates.length,380);
+const backcastToggle=get("candle-backcast-toggle");
+const filter=get("candle-backcast-filter");
+assert.equal(currentMarkers.filter(m=>m.text.endsWith("?")).length,0,
+  "Guess markers must be OFF by default");
+backcastToggle.events.click({currentTarget:backcastToggle});
+unique();
+const rawCandidates=ctx.window.SPX_CANDLE_PATTERNS.historicalBackcast.candidates;
+const normal=rawCandidates.filter(m=>["dH","dL","JH","JL"].includes(m.code)).length;
+assert.equal(currentMarkers.filter(m=>m.text.endsWith("?")).length,normal);
+assert.equal(currentMarkers.length,176+normal);
+assert(currentMarkers.filter(m=>m.text.endsWith("?")).every(m=>
+  m.time<"1997-01-01"&&m.time>="1962-01-02"&&m.shape==="circle"));
+assert(currentMarkers.every(m=>!m.text.endsWith("?")||m.time<"1997-01-01"));
+filter.value="RH";
+filter.events.change({currentTarget:filter});
+unique();
+assert.equal(currentMarkers.filter(m=>m.text==="RH?").length,
+  rawCandidates.filter(m=>m.code==="RH").length);
+assert(currentMarkers.filter(m=>m.text.endsWith("?")).every(m=>m.text==="RH?"));
+filter.value="all";
+filter.events.change({currentTarget:filter});
+unique();
+assert.equal(currentMarkers.filter(m=>m.text.endsWith("?")).length,
+  rawCandidates.length,"All-six filter should include each earlier research class");
+backcastToggle.events.click({currentTarget:backcastToggle});
+unique();
+assert.equal(currentMarkers.filter(m=>m.text.endsWith("?")).length,0);
+assert.equal(currentMarkers.length,176);
+
 const on=get("candle-label-toggle");
 on.events.click({currentTarget:on});
 chartClick({time:"2000-03-24"});
@@ -143,4 +176,4 @@ assert(currentMarkers.some(m=>m.text==="P•"||m.text==="T•"),
 assert.equal(get("candle-label-summary").textContent.includes("175 unique"),true);
 console.log("SPX candle annotation test passed: 175 permanent labels,",
   "one marker per session, locally saved duplicate cleanup,",
-  "pattern overlays and RH/RL case-study controls.");
+  "pattern overlays, pre-1997 backcast on/off and class filters.");
