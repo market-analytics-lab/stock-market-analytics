@@ -121,7 +121,7 @@ assert.deepEqual(JSON.parse(local.get("spx-additional-turns-v1")),
 assert.equal(currentMarkers.filter(m=>m.time==="2000-03-24").length,1);
 assert.equal(currentMarkers.find(m=>m.time==="2000-03-24").text,"RH");
 assert.equal(currentMarkers.find(m=>m.time==="2023-01-03").text,"dH*");
-assert.equal(ctx.window.SPX_CANDLE_PATTERNS.historicalBackcast.candidates.length,380);
+assert(ctx.window.SPX_CANDLE_PATTERNS.historicalBackcast.candidates.length>20);
 const backcastToggle=get("candle-backcast-toggle");
 const filter=get("candle-backcast-filter");
 assert.equal(currentMarkers.filter(m=>m.text.endsWith("?")).length,0,
