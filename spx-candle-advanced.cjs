@@ -282,6 +282,7 @@ function covered(c,kind,mask){
   }
   return n;
 }
+function countMaskIntersect(a,b){let n=0;for(let w=0;w<W;w++)n+=pop(a[w]&b[w]);return n}
 const baseline={};
 for(const code of ids){
   baseline[code]={};
@@ -295,7 +296,6 @@ for(const code of ids){
       }).length};
   }
 }
-function countMaskIntersect(a,b){let n=0;for(let w=0;w<W;w++)n+=pop(a[w]&b[w]);return n}
 const candidates=[];
 for(const a of atoms)candidates.push({id:a.id,name:a.name,group:a.family,a,b:null});
 const validAtoms=atoms.filter(a=>{
@@ -361,9 +361,10 @@ for(const code of ids){
     caveat:"Candidate rules trained before 2015; intermediate validation 2015–2018; final holdout 2019 onward was not used for selection. Searching many correlated candidates increases false discovery."};
 }
 const chosen=Object.fromEntries(ids.map(k=>[k,results[k].leaders.slice(0,7)]));
+const signalSets=Object.fromEntries(Object.entries(signalDict).map(([id,dates])=>[id,new Set(dates)]));
 function consensusOnDay(code,i){
   const used=chosen[code];let votes=0;
-  for(const p of used){const dates=signalDict[p.id];if(dates?.includes(bars[i].date))votes++}
+  for(const p of used)if(signalSets[p.id]?.has(bars[i].date))votes++;
   return votes;
 }
 // Build history/near-term consensus from FROZEN model rules. No future
