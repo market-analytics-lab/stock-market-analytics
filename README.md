@@ -35,25 +35,51 @@ The separate [SPX Candlestick Pattern Explorer](https://market-analytics-lab.git
 
 1. Go to **SPX Candlestick Pattern Explorer**, beneath the main chart.
 2. Choose **5Y**, **10Y**, **25Y**, **50Y**, or **ALL**; or enter a specific date under **Jump to Date**, press **Go**, and zoom/pan around it.
-3. Choose the correct **dH, dL, JH, or JL** label, then enable **Click candle to label: On** and click the desired SPX trading-day candle.
+3. Choose the correct **dH, dL, JH, JL, RH, or RL** label, then enable **Click candle to label: On** and click the desired SPX trading-day candle.
 4. Repeat as needed. Your starred labels appear on the chart and in the date list. They are saved **locally in the current browser**, not automatically uploaded to GitHub.
 5. Click **Copy my dates** and paste the *dates* into your ChatGPT conversation to add them to the permanent model and analyze the older turning-point examples. There is no code to copy or install.
 
 ### Pattern model limitations and controls
 
-The candle miner currently scans the recent **2024-onward labeled era** for over 37,000 precursor and multi-candle pattern hypotheses. It uses only genuine daily OHLC and independently displays training and later holdout outcomes for 1–3-day-ahead user-labeled turns. The long archive is primarily a **navigation and labeling dataset** until additional verified historical high/low dates are supplied. Merely browsing or locally marking dates does not silently change the trained model.
+The candlestick miner is **now rebuilt on 7,584 real SPX daily records covering 1996–2026**. Its first 1997 research labels came from the latest collection of 146 user-supplied dates. Those records were added to the prior 13 labels, producing **159 distinct labeled SPX turning points** across six categories:
 
-The second chart can display one chosen mined pattern's purple training/holdout occurrences, retains colored user-specified historic turn arrows, and provides zoom, crosshair, logarithmic scale and historical date navigation.
+| Label | Interpretation | User-supplied examples |
+|---|---|---:|
+| dH | Moderate high | 58 |
+| dL | Moderate low | 58 |
+| JH | Major high | 22 |
+| JL | Major low | 21 |
+| RH | Bear-market high | 0 — awaiting dates |
+| RL | Bear-market low | 0 — awaiting dates |
 
-**Statistical caution:** With only the original 13 labeled dates, the pattern search has substantial multiple-comparisons/overfitting risk. As more historical labels become available, the next stage is to expand the training period, exclude data-quality-problematic bars from wick tests, and maintain a strictly later out-of-sample test set. No pattern is a validated trading signal until it survives independent tests.
+The user defines the turning-point types and dates; these are subjective **closing-price** event labels, not independently audited exact-extremum bars.
 
-Validation: `node spx-long-test.cjs` checks date coverage and OHLC consistency; `node spx-candle-test.cjs` checks pattern-mining reproducibility and holdout isolation.
+The offline generator `generate_spx_candle_report.cjs` tests **43,266 candidate wick/body/sequence conditions and combinations** from true daily OHLC. It trains on **5,533 candidate decision sessions during 1997–2018**, then evaluates the selected rules on **1,981 strictly later decision sessions (2019–2026)**. The three-session forward event horizon is separated from the training/holdout boundary by a three-session embargo. Outcomes from holdout sessions do **not** select, rank, or tune the training winners. The generator is rerun on label changes and on the existing daily SPX data refresh; browsers load the precomputed `spx-candle-report.js` rather than scanning 43,266 rules live.
+
+### Illustrative discoveries and caution
+
+| Label | Best training example (selected from 43,266) | Earlier winning sessions | Later held-out winning sessions |
+|---|---|---|---|
+| dH | Upper wick ≥60% of range and 20-day closing high | 7 / 44 | 1 / 22 |
+| dL | Close below 20-day SMA; gap up two days prior | 9 / 66 | 7 / 83 |
+| JH | Outside bar one day prior; gap up two days prior | 4 / 24 | 0 / 41 |
+| JL | 20-day closing low; inside bar two days prior | 7 / 53 | 0 / 11 |
+
+"Winning sessions" count pattern days that preceded **a user-labeled event in one of the next three trading days**. Multiple winning sessions can refer to the same future turn; **distinct events covered** are also shown on the chart. Results are exploratory and may be strongly affected by multiple testing, regime changes, selection bias and the small number of major events.
+
+**RH and RL are empty new classes**: their controls, annotation colors and export functionality are ready, but no bear-market-high/low rankings or probabilities are shown until the user supplies RH/RL dates. Additional annotations are saved locally in the user's browser until the **Copy my dates** list is shared in chat; only then are they incorporated into the permanent GitHub model.
+
+The second chart supports one selected purple training/holdout pattern overlay at a time, colored arrows for all 159 historical user labels, zoom, crosshair, logarithmic scale, and 1957+ date navigation. No 1871 monthly observations are treated as daily candlesticks; close-only/flat older bars are excluded from wick-based mining.
+
+**No model here has a validated trading edge.** The number of searched hypotheses is enormous relative to labeled turning points. A historical training winner is not a forecast, and the holdout is intended to reveal failures as well as successes.
+
+Validation: `node spx-candle-test.cjs` verifies report reproducibility and invariance of training winners when held-out prices are altered. `node spx-long-test.cjs` checks 1957+ daily index history.
 
 ## SPX turning-point research (experimental)
 
 The viewer now has two separate studies:
 
-1. **Your 13 hand-labeled turning points** (`dH`, `dL`, `JH`, `JL`) and their calendar-day watch windows. Those windows are descriptive hypotheses fitted from a very small user-supplied sequence, not statistically calibrated probabilities.
+1. **The original 13 recent turning-point timing examples** (`dH`, `dL`, `JH`, `JL`) and their fitted calendar-day watch windows, plus the newer 146 historical annotations for the independent candle-pattern study. Those windows are descriptive hypotheses fitted from a very small user-supplied sequence, not statistically calibrated probabilities.
 2. **Independent multi-feature historical study**, implemented in `spx-pattern-engine.js`. This tests price/momentum/volatility/seasonality and fixed multi-year cycle features against reproducible **monthly-average** swing labels.
 
 Click **Model backtest markers** to visualize purple `M-H` and `M-L` high-scoring OOS months. Their top-decile cutoff was established after ranking the entire held-out sample. They are **retrospective diagnostics**, not historically executable trade alerts. Leave that overlay off for a clean chart.
