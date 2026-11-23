@@ -8,6 +8,7 @@ on:
       - 'spx-candle-*.js'
       - 'spx-candle-*.css'
       - 'spx-candle-test.cjs'
+      - 'spx-candle-ui-test.cjs'
       - 'spx-turning-points.js'
       - 'generate_spx_candle_report.cjs'
       - 'spx-long-ohlc.js'
@@ -48,6 +49,7 @@ jobs:
         run: |
           node spx-pattern-test.cjs
           node spx-candle-test.cjs
+          node spx-candle-ui-test.cjs
           node spx-long-test.cjs
       - name: Verify external context importer
         run: python -m unittest refresh_context_test.py backfill_spx_test.py
