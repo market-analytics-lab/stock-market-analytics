@@ -401,8 +401,47 @@ const jlSuggestions=keepOneByDate(recent).filter(x=>x.code==="JL");
 const lastJLSuggestion=jlSuggestions.at(-1)||null;
 const lastPrice=bars.at(-1);
 const currentVotes=Object.fromEntries(ids.map(k=>[k,consensusOnDay(k,N-1)]));
+// Independent price-action checkpoint for JL-like lows, with an explicit
+// CONFIRMATION DELAY. It labels the historical pivot candle, but only
+// becomes available after at least five newer sessions and a 4% rebound
+// within fifteen sessions. It is NOT a true user-defined JL.
+const pricePivots=[];
+let lastAcceptedPivot=-99;
+for(let i=warmup+65;i+15<N;i++){
+  if(bars[i].date<"1997-01-01"||i-lastAcceptedPivot<35)continue;
+  if(!goodContext[i]||close[i]>lowest(close,i,65))continue;
+  let localBottom=true;
+  for(let k=1;k<=5;k++){
+    if(close[i+k]<close[i]||close[i-k]<close[i]){localBottom=false;break;}
+  }
+  if(!localBottom)continue;
+  let confirmedIndex=-1;
+  for(let k=5;k<=15;k++){
+    if(close[i+k]>=close[i]*1.04){confirmedIndex=i+k;break;}
+  }
+  if(confirmedIndex<0)continue;
+  pricePivots.push({
+    pivotDate:bars[i].date,knownAfter:bars[confirmedIndex].date,
+    pivotClose:close[i],rebound:close[confirmedIndex]/close[i]-1,
+    source:"20+ session closing low, five-session pivot and 4% rebound"
+  });
+  lastAcceptedPivot=i;
+}
+const laterPivots=pricePivots.filter(p=>p.pivotDate>="2019-01-01");
+let nearLabeledJL=0;
+for(const event of laterPivots){
+  const index=dateToIndex.get(event.pivotDate);
+  if([...yLabels.JL].some(date=>{
+    const ix=dateToIndex.get(date);
+    return ix!==undefined&&Math.abs(index-ix)<=5;
+  }))nearLabeledJL++;
+}
+
 const watch={
   lastConfirmedJL:earliestJL,
+  lastAlgorithmicPricePivot:pricePivots.at(-1)||null,
+  algorithmicPivot2019Plus:{detected:laterPivots.length,nearUserJLWithin5Days:nearLabeledJL,
+    caveat:"Heuristic detected only after a five-session price pivot and 4% rebound within 15 sessions. Not a user-defined or verified major low."},
   // Signal triggers are 1–3 TRADING SESSIONS *before* intended highs/lows.
   lastModelJLTrigger:lastJLSuggestion?.date||null,
   lastModelJLVotes:lastJLSuggestion?.votes||0,
@@ -418,7 +457,7 @@ const watch={
   precisionClaim:false
 };
 const out={
-  name:"Independent SPX Multi-Horizon Candlestick Study",version:"2026-11-23-expanded-v1",
+  name:"Independent SPX Multi-Horizon Candlestick Study",version:"2026-11-23-expanded-v2",
   asOf:source.asOf,dates:{start:bars[0].date,trainEnd:"2014-12-31",
     validationEnd:"2018-12-31",holdoutStart:"2019-01-01"},
   featureCount:atoms.length,combinationCount:candidates.length,
@@ -426,6 +465,7 @@ const out={
   studies:results,baselines:baseline,samples:counts,
   pastSuggestions:keepOneByDate(pre97),
   recentSuggestions:keepOneByDate(recent),
+  automaticJLPricePivots:pricePivots.filter(p=>p.pivotDate>="2025-01-01"),
   labelsCovered:turns.counts,
   latestJL:watch,
   notes:[
@@ -434,6 +474,7 @@ const out={
     "2015–2018 validation was used to select among 300 training finalists; 2019+ results are shown only after rule selection.",
     "Different rule combinations are highly correlated and not independent votes. A large search space creates a severe multiple-testing hazard.",
     "JL model markers refer to precursor setup dates; an actual low one to three sessions later is NOT confirmed until price action and a human-labeled date support it.",
+    "An additional JL-like price-pivot date can appear ONLY after at least five later price bars and a substantial rebound. These retrospective pivots are not equivalent to major lows.",
     "This model is research only; no validated trading strategy or precisely calibrated JL probabilities have been established."
   ]
 };
