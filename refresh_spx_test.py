@@ -58,6 +58,10 @@ class RefreshSPXTests(unittest.TestCase):
         refreshed = versioned_index(html, "2026-11-10")
         self.assertEqual(refreshed.count("?asof=2026-11-10"), 2)
         self.assertNotIn("v=old", refreshed)
+        with_report = html + '\n<script src="./spx-candle-report.js?v=stale" defer></script>'
+        updated = versioned_index(with_report, "2026-11-10")
+        self.assertEqual(updated.count("?asof=2026-11-10"), 3)
+        self.assertNotIn("v=stale", updated)
 
 
 if __name__ == "__main__":
