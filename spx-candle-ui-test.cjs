@@ -174,11 +174,16 @@ const recentToggle=get("candle-expanded-recent-toggle");
 assert.equal(currentMarkers.filter(m=>m.text.endsWith("~")).length,0);
 recentToggle.events.click({currentTarget:recentToggle});
 unique();
-assert.equal(currentMarkers.filter(m=>m.text.endsWith("~")).length,
-  advanced.recentSuggestions.filter(x=>!ctx.window.SPX_TURNING.points.some(y=>y.date===x.date)).length);
+const userDates=new Set(ctx.window.SPX_TURNING.points.map(x=>x.date));
+const pivotDates=new Set((advanced.automaticJLPricePivots||[]).map(x=>x.pivotDate));
+const expectedSetups=advanced.recentSuggestions.filter(x=>
+  !userDates.has(x.date)&&!pivotDates.has(x.date)).length;
+assert.equal(currentMarkers.filter(m=>m.text.endsWith("~")).length,expectedSetups);
+assert.equal(currentMarkers.filter(m=>m.text==="JL◇").length,
+  [...pivotDates].filter(date=>!userDates.has(date)).length);
 recentToggle.events.click({currentTarget:recentToggle});
 unique();
-assert.equal(currentMarkers.filter(m=>m.text.endsWith("~")).length,0);
+assert.equal(currentMarkers.filter(m=>m.text.endsWith("~")||m.text==="JL◇").length,0);
 const on=get("candle-label-toggle");
 on.events.click({currentTarget:on});
 chartClick({time:"2000-03-24"});
