@@ -339,9 +339,15 @@
       info.appendChild(node("span","",
         "Most recent model-only JL setup: "+(jl.lastModelJLTrigger||"No recent trigger")+
         " (NOT a confirmed JL, trigger precedes any potential turn by 1–3 sessions)."));
+      const lastSignalBar=full.findIndex(b=>b.time===jl.lastModelJLTrigger);
+      const mostRecentBar=full.findIndex(b=>b.time===jl.mostRecentBar);
+      const age=lastSignalBar<0||mostRecentBar<0?null:mostRecentBar-lastSignalBar;
+      const signalState=age===null?"No recently dated setup":
+        age>=3?"The last model setup's 1–3-session window has already passed":
+        "The last model setup's 1–3-session window may still be active";
       info.appendChild(node("small","",jl.status+" as of "+jl.mostRecentBar+
         ". Latest candle matched "+jl.currentJLRuleMatches+"/"+jl.minimumVotes+
-        " required voting rules. The November 5 setup window has already expired."));
+        " required voting rules. "+signalState+"."));
       info.appendChild(node("small","","Independent legacy timing watch: "+
         jl.calendarWatch.earliest+" through "+jl.calendarWatch.latest+
         " after the October 6 JH. This is a hypothesis, not an established major-low date."));
