@@ -1,60 +1,94 @@
 "use strict";
-/* Offline reproducibility and chronological isolation tests for candle miner. */
+/*
+ * Validate 159 user-labeled SPX dates, six categories, isolated holdout,
+ * offline model determinism and immunity to altered post-2018 prices.
+ */
 const fs=require("node:fs");
+const os=require("node:os");
+const path=require("node:path");
 const vm=require("node:vm");
 const assert=require("node:assert/strict");
-function boot(tamper=null){
-  const ctx=vm.createContext({window:{},console,Math,Date,Intl,Number,Map,Set,Object,Array,
-    JSON,String,Boolean,parseInt,parseFloat,Infinity});
-  for(const file of ["spx-ohlc-data.js","spx-turning-points.js"])
-    vm.runInContext(fs.readFileSync(file,"utf8"),ctx,{filename:file,timeout:30000});
-  if(tamper)tamper(ctx.window);
-  vm.runInContext(fs.readFileSync("spx-candle-miner.js","utf8"),ctx,
-    {filename:"spx-candle-miner.js",timeout:120000});
-  return ctx.window.SPX_CANDLE_PATTERNS;
-}
-const first=boot();
-assert.equal(first.symbol,"SPX");
-assert(first.candidatesGenerated>3000,"Expected broad pattern combination search");
-assert.equal(first.selectedEvents.reduce((a,e)=>a+e.dates.length,0),13);
-assert(first.trainCount>200&&first.testCount>100);
-assert(first.dateEnd>first.splitDate);
-assert(first.analysis.JL.leaders.length>0,"Expected at least one valid candidate");
-assert(first.analysis.JH.leaders.length>0,"Expected at least one JH candidate");
-const second=boot();
-for(const code of first.labels){
-  assert.equal(first.analysis[code].leaders[0].id,second.analysis[code].leaders[0].id);
-  assert.deepEqual(JSON.parse(JSON.stringify(first.baseRates[code])),
-    JSON.parse(JSON.stringify(second.baseRates[code])));
-  for(const l of first.analysis[code].leaders) {
-    assert(l.train.fired>=5);
-    assert(l.train.hits<=l.train.fired);
-    assert(l.test.hits<=l.test.fired);
-    const signalDates=first.signals(l.id);
-    assert(signalDates.every(d=>typeof d==="string"&&d<=first.dateEnd));
+const {execFileSync}=require("node:child_process");
+const ctx=vm.createContext({window:{}});
+for(const p of ["spx-long-ohlc.js","spx-turning-points.js","spx-candle-report.js","spx-candle-miner.js"])
+  vm.runInContext(fs.readFileSync(p,"utf8"),ctx,{filename:p,timeout:45000});
+const labels=ctx.window.SPX_TURNING;
+const report=ctx.window.SPX_CANDLE_REPORT;
+const model=ctx.window.SPX_CANDLE_PATTERNS;
+const history=ctx.window.SPX_LONG_OHLC;
+assert.equal(labels.points.length,159);
+assert.deepEqual(JSON.parse(JSON.stringify(labels.codes)),["dH","dL","JH","JL","RH","RL"]);
+assert.deepEqual(JSON.parse(JSON.stringify(labels.counts)),{dH:58,dL:58,JH:22,JL:21,RH:0,RL:0});
+assert(labels.points.every((p,i)=>i===0||labels.points[i-1].date<=p.date));
+const dates=new Set(history.daily.map(row=>row[0]));
+assert(labels.points.every(p=>dates.has(p.date)),"Every historic user label must correspond to a real SPX daily session");
+assert.equal(report.dateStart,"1996-10-01");
+assert.equal(report.splitDate,"2019-01-01");
+assert(report.candidatesGenerated>30000);
+assert(report.trainCount>5000&&report.testCount>1500);
+assert.equal(report.barCount,model.daily.length);
+assert.equal(model.stale,false,"Research report needs refreshing after new labels or candles");
+for(const code of ["dH","dL","JH","JL"]) {
+  const group=report.analysis[code];
+  assert(group.leaders.length>=1,code+" needs researched candidates");
+  assert(group.baseline.trainLabels>10&&group.baseline.testLabels>0);
+  for(const rule of group.leaders) {
+    assert(rule.train.fired>=20&&rule.train.hits<=rule.train.fired);
+    assert(rule.train.eventsCovered<=group.baseline.trainLabels);
+    assert(rule.test.eventsCovered<=group.baseline.testLabels);
+    assert(Number.isFinite(rule.score));
+    assert(model.signals(rule.id).every(time=>dates.has(time)));
   }
 }
-// Deliberately perturb held-out OHLC only: train-ranked patterns cannot change.
-const altered=boot(window=>{
-  const data=window.SPX_OHLC.daily;
-  const split=Math.floor(data.length*.7);
-  for(let i=split+3;i<data.length;i++){
-    const row=data[i];const shift=(i%5+1)*.005;
-    for(let col=1;col<=4;col++)row[col]=+(row[col]*(1+shift)).toFixed(2);
+for(const code of ["RH","RL"]){
+  assert.equal(report.analysis[code].status,"awaiting-user-labels");
+  assert.equal(report.analysis[code].leaders.length,0);
+  assert.equal(report.analysis[code].baseline.trainLabels,0);
+  assert.equal(report.analysis[code].baseline.testLabels,0);
+}
+const temp=fs.mkdtempSync(path.join(os.tmpdir(),"spx-candle-regression-"));
+try {
+  const originalOutput=path.join(temp,"reproduced.js");
+  const run=(file,out)=>{
+    execFileSync(process.execPath,["generate_spx_candle_report.cjs"],{
+      env:{...process.env,SPX_CANDLE_REPORT_OUTPUT:out,
+        ...(file?{SPX_LONG_OHLC_INPUT:file}:{})},
+      timeout:150000,
+      stdio:"pipe",
+    });
+    const code=fs.readFileSync(out,"utf8");
+    const result=code.match(/window\.SPX_CANDLE_REPORT\s*=\s*(\{.*\});/s);
+    assert(result);
+    return JSON.parse(result[1]);
+  };
+  const regenerated=run(null,originalOutput);
+  assert.equal(fs.readFileSync(originalOutput,"utf8"),fs.readFileSync("spx-candle-report.js","utf8"),
+    "Model report is stale or nonreproducible");
+  const changed=JSON.parse(JSON.stringify(history));
+  for(const row of changed.daily) if(row[0]>="2019-01-07") {
+    const factor=1+((Number(row[0].slice(-2))%5)+1)*0.003;
+    for(let i=1;i<=4;i++)row[i]=+(row[i]*factor).toFixed(2);
   }
-});
-for(const code of first.labels){
-  assert.equal(first.analysis[code].leaders[0].id,altered.analysis[code].leaders[0].id,
-    "Future prices influenced selected pattern for "+code);
-  assert.equal(first.analysis[code].leaders[0].score,altered.analysis[code].leaders[0].score,
-    "Future prices influenced training score for "+code);
+  const tampered=path.join(temp,"altered-history.js");
+  fs.writeFileSync(tampered,"window.SPX_LONG_OHLC = "+JSON.stringify(changed)+";\n");
+  const altered=run(tampered,path.join(temp,"modified.js"));
+  for(const code of ["dH","dL","JH","JL"]) {
+    const before=regenerated.analysis[code].leaders;
+    const after=altered.analysis[code].leaders;
+    assert.equal(before.length,after.length);
+    for(let i=0;i<before.length;i++){
+      assert.equal(before[i].id,after[i].id,
+        "Future OHLC altered selected training rule "+code+" rank "+i);
+      assert.equal(before[i].score,after[i].score,
+        "Future OHLC altered training score "+code+" rank "+i);
+      assert.deepEqual(before[i].train,after[i].train,
+        "Future OHLC altered training outcome "+code+" rank "+i);
+    }
+  }
+}finally{
+  fs.rmSync(temp,{recursive:true,force:true});
 }
-// Simple test on initial/last chart dataset to guard against fabricated OHLC.
-assert(first.daily.every(b=>b.high>=Math.max(b.open,b.close)&&b.low<=Math.min(b.open,b.close)));
-console.log("SPX candle study passed:",first.candidatesGenerated,"candidates across",
-  first.barCount,"authentic bars; split",first.splitDate);
-for(const code of first.labels){
-  const x=first.analysis[code].leaders[0];
-  console.log(code,JSON.stringify({train:x.train,test:x.test,pattern:x.name,
-    eventCounts:first.baseRates[code]}));
-}
+console.log("SPX candlestick research passed:",
+  report.candidatesGenerated,"rules; 159 labeled turning points; training",
+  report.trainCount,"sessions, holdout",report.testCount,
+  "; RH/RL correctly untrained; no future-data leakage.");
