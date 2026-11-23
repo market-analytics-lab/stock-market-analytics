@@ -13,7 +13,7 @@
   <script src="./spx-ohlc-data.js?asof=2026-11-20" defer></script>
   <script src="./spx-history-data.js?asof=2026-11-20" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.0.9/dist/lightweight-charts.standalone.production.js" defer></script>
-  <script src="./spx-turning-points.js?v=20261123-six-labels" defer></script>
+  <script src="./spx-turning-points.js?v=20261123-six-labels-update2" defer></script>
   <script src="./spx-vix-data.js?asof=2026-11-20" defer></script>
   <script src="./spx-breadth-data.js?asof=2026-11-20" defer></script>
   <script src="./spx-pattern-engine.js?v=20261120-v2" defer></script>
@@ -22,9 +22,9 @@
   <script src="./spx-pattern-dashboard.js?v=20261120-v2" defer></script>
   <script src="./spx-pattern-context.js?v=20261120-v2" defer></script>
   <script src="./spx-long-ohlc.js?asof=2026-11-20-backfill" defer></script>
-  <script src="./spx-candle-report.js?v=20261123-six-labels" defer></script>
+  <script src="./spx-candle-report.js?v=20261123-six-labels-update2" defer></script>
   <script src="./spx-candle-miner.js?v=20261123-offline-study" defer></script>
-  <script src="./spx-candle-explorer.js?v=20261123-six-labels" defer></script>
+  <script src="./spx-candle-explorer.js?v=20261123-no-duplicates" defer></script>
   <script src="./app.js" defer></script>
 </head>
 <body>
@@ -209,7 +209,7 @@
           <button type="button" id="candle-date-go">Go</button>
           <button type="button" id="candle-log-scale" aria-pressed="false">Log Scale</button>
           <span class="candle-explorer-gap"></span>
-          <button type="button" class="active" id="candle-overlay-toggle" aria-pressed="true" title="Toggle only the purple selected-pattern markers; user-provided date arrows remain visible">Pattern markers</button>
+          <button type="button" id="candle-overlay-toggle" aria-pressed="false" title="Toggle only the purple selected-pattern markers; user-provided date arrows remain visible">Pattern markers</button>
           <button type="button" id="candle-zoom-out" title="Zoom out">−</button>
           <button type="button" id="candle-zoom-in" title="Zoom in">+</button>
           <button type="button" id="candle-fit">Fit</button>
