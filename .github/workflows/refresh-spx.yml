@@ -34,6 +34,9 @@ jobs:
       - name: Download real SPX prices and update 1871+ monthly series
         run: python refresh_spx.py
 
+      - name: Merge newly verified daily closes into long OHLC archive
+        run: python refresh_spx_long.py
+
       - name: Refresh VIX volatility and S&P 500 market breadth context
         run: python refresh_context.py
 
@@ -41,7 +44,7 @@ jobs:
         id: publish
         shell: bash
         run: |
-          if git diff --quiet -- spx-ohlc-data.js spx-history-data.js spx-vix-data.js spx-breadth-data.js index.html; then
+          if git diff --quiet -- spx-ohlc-data.js spx-history-data.js spx-long-ohlc.js spx-vix-data.js spx-breadth-data.js index.html; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
             echo "No newer SPX/VIX/breadth datasets available."
             exit 0
