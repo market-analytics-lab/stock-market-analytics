@@ -34,3 +34,13 @@
 .candle-label-toolbar #candle-label-status{flex:1 1 220px;line-height:1.4;font-size:10px;}
 .candle-label-output{width:100%;max-height:110px;resize:vertical;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:7px 9px;font-size:11px;line-height:1.4;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;}
 .candle-explorer-toolbar input[type=date]{font:inherit;font-size:11px;padding:7px 8px;border:1px solid var(--border);border-radius:5px;background:var(--surface-2);color:var(--text);}
+
+/* 1962–1996 model-generated hypotheses: distinct from confirmed user marks. */
+.candle-backcast-toolbar{margin:3px 0 2px;padding:11px 8px;border:1px dashed var(--border);border-radius:7px;}
+.candle-backcast-toolbar select{font:inherit;font-size:11px;max-width:280px;
+  border:1px solid var(--border);border-radius:5px;padding:7px 9px;
+  color:var(--text);background:var(--surface-2);}
+.candle-backcast-count{flex:1 1 260px;color:var(--muted);font-size:11px;line-height:1.5;}
+.candle-backcast-caution{font-size:11px;line-height:1.6;color:var(--muted);margin:5px 0 12px;}
+.candle-backcast-caution strong{color:var(--text);}
+@media(max-width:680px){.candle-backcast-toolbar select{width:100%;max-width:none}}
