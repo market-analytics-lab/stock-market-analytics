@@ -17,6 +17,8 @@ const report=ctx.window.SPX_CANDLE_REPORT;
 const model=ctx.window.SPX_CANDLE_PATTERNS;
 const history=ctx.window.SPX_LONG_OHLC;
 assert.equal(labels.points.length,175);
+assert.equal(new Set(labels.points.map(p=>p.date)).size,175,
+  "Each observed SPX trading date must have exactly one canonical high/low category");
 assert.deepEqual(JSON.parse(JSON.stringify(labels.codes)),["dH","dL","JH","JL","RH","RL"]);
 assert.deepEqual(JSON.parse(JSON.stringify(labels.counts)),{dH:63,dL:63,JH:22,JL:21,RH:3,RL:3});
 assert(labels.points.every((p,i)=>i===0||labels.points[i-1].date<=p.date));
@@ -44,7 +46,8 @@ for(const code of ["RH","RL"]){
   const group=report.analysis[code];
   assert.equal(group.baseline.trainLabels,2,"Two earlier bear cycles should be in training");
   assert.equal(group.baseline.testLabels,1,"2022 bear cycle stays held out");
-  assert.equal(group.status,"very-small-sample");
+  assert.equal(group.status,"very-small-sample",
+    "Bear-market class must disclose insufficient calibration sample");
   assert(group.leaders.length>=1,"Case study should find descriptive RH/RL features");
   for(const rule of group.leaders){
     assert.equal(rule.train.eventsCovered,2,"Both earlier bear cycles must be represented");
