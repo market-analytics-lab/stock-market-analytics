@@ -50,6 +50,35 @@
   const markerApi=typeof lib.createSeriesMarkers==="function"?lib.createSeriesMarkers(candles,[]):null;
   const byDate=new Map(full.map(b=>[b.time,b]));
   let code="JL",id=null,showSignals=false,logScale=false;
+  // Historical backcasts are pre-1997 candidate-pattern coincidences, not
+  // verified user labels, and never modify the stored historical database.
+  const historicalBackcast=model.historicalBackcast||null;
+  let showBackcast=false,backcastFilter="core";
+  function backcastAllowed(type){
+    if(backcastFilter==="all")return true;
+    if(backcastFilter==="core")return ["dH","dL","JH","JL"].includes(type);
+    return type===backcastFilter;
+  }
+  function historicalFocus(){
+    const start=full.findIndex(b=>b.time>="1987-01-01");
+    const end=full.findIndex(b=>b.time>="1997-01-01");
+    if(start>=0&&end>start)chart.timeScale().setVisibleLogicalRange({
+      from:Math.max(0,start-8),to:Math.min(full.length+2,end+8)
+    });
+  }
+  function backcastStatus(){
+    const output=get("candle-backcast-count");
+    if(!output)return;
+    const eligible=(historicalBackcast?.candidates||[]).filter(item=>backcastAllowed(item.code));
+    const counts=Object.fromEntries(["dH","dL","JH","JL","RH","RL"].map(k=>[
+      k,eligible.filter(x=>x.code===k).length
+    ]));
+    output.textContent=historicalBackcast
+      ?(showBackcast?"Visible":"Hidden")+" · "+eligible.length+
+        " historical hypotheses ("+Object.entries(counts).filter(x=>x[1]).map(x=>x[0]+" "+x[1]).join(" · ")+
+        ") · signals 1–3 sessions ahead, not confirmed turns"
+      :"No retrospective research candidates are available yet.";
+  }
   // One chart flag per trading date. The permanent GitHub labels take
   // precedence over temporary annotations and research pattern dots.
   const permanent=new Map((window.SPX_TURNING?.points||[]).map(p=>[p.date,p.code]));
@@ -121,6 +150,20 @@
         color:colors[own.code],shape:own.code.endsWith("H")?"arrowDown":"arrowUp",
         text:own.code+"*",size:own.code.startsWith("J")?2:1
       });
+    }
+    // Optional 1962–1996 backward transfer. Circles marked "?"
+    // distinguish guesses from the user's confirmed high/low arrows.
+    if(showBackcast&&historicalBackcast){
+      for(const suggestion of historicalBackcast.candidates){
+        if(!backcastAllowed(suggestion.code)||!byDate.has(suggestion.date)||
+          uniqueByDay.has(suggestion.date))continue;
+        const type=suggestion.code;
+        uniqueByDay.set(suggestion.date,{
+          time:suggestion.date,
+          position:type.endsWith("H")?"aboveBar":"belowBar",
+          color:colors[type],shape:"circle",text:type+"?",size:1
+        });
+      }
     }
     if(showSignals&&id){
       for(const time of model.signals(id)){
@@ -238,6 +281,27 @@
     showSignals=!showSignals;event.currentTarget.classList.toggle("active",showSignals);
     event.currentTarget.setAttribute("aria-pressed",String(showSignals));plotMarkers();
   });
+
+  const hypothesisToggle=get("candle-backcast-toggle");
+  const hypothesisFilter=get("candle-backcast-filter");
+  hypothesisToggle?.addEventListener("click",event=>{
+    if(!historicalBackcast){
+      backcastStatus();return;
+    }
+    showBackcast=!showBackcast;
+    event.currentTarget.classList.toggle("active",showBackcast);
+    event.currentTarget.setAttribute("aria-pressed",String(showBackcast));
+    event.currentTarget.textContent="Show model guesses: "+(showBackcast?"On":"Off");
+    if(showBackcast)historicalFocus();
+    plotMarkers();
+    backcastStatus();
+  });
+  hypothesisFilter?.addEventListener("change",event=>{
+    backcastFilter=event.currentTarget.value||"core";
+    plotMarkers();backcastStatus();
+  });
+  get("candle-view-pre97")?.addEventListener("click",historicalFocus);
+  backcastStatus();
 
   const labelMode=get("candle-label-toggle");
   const labelType=get("candle-label-type");
