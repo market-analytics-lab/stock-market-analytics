@@ -211,6 +211,21 @@
           <button type="button" id="candle-zoom-in" title="Zoom in">+</button>
           <button type="button" id="candle-fit">Fit</button>
         </div>
+        <div class="candle-label-toolbar" aria-label="Mark additional historical high and low dates">
+          <span class="tool-name">LABEL MORE HIGHS &amp; LOWS</span>
+          <label for="candle-label-type">Turn type</label>
+          <select id="candle-label-type" aria-label="High or low category">
+            <option value="dH">dH · Moderate high</option>
+            <option value="dL">dL · Moderate low</option>
+            <option value="JH">JH · Major high</option>
+            <option value="JL">JL · Major low</option>
+          </select>
+          <button type="button" id="candle-label-toggle" aria-pressed="false">Click candle to label: Off</button>
+          <button type="button" id="candle-label-undo">Undo last</button>
+          <button type="button" id="candle-label-copy">Copy my dates</button>
+          <span id="candle-label-status" role="status" aria-live="polite">Mark a candle, then copy the dates and send them here to expand the pattern study.</span>
+        </div>
+        <textarea id="candle-label-output" class="candle-label-output" rows="3" readonly aria-label="Saved historical high and low dates to share" placeholder="Your additional labeled dates appear here. Saved locally in this browser."></textarea>
         <div id="candle-explorer-surface" class="candle-explorer-surface" role="group" aria-label="Separate S&P 500 daily OHLC candlesticks with user supplied highs and lows and selected mined pattern markers"></div>
         <div id="candle-explorer-crosshair" class="candle-explorer-crosshair" aria-live="off">SPX O/H/L/C loading…</div>
         <p id="candle-historical-quality" class="candle-explorer-status">Historical OHLC quality and coverage loading…</p>
