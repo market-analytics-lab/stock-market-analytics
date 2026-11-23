@@ -14,11 +14,16 @@
   const turnCounts=window.SPX_TURNING?.counts||{};
   const labelMismatch=report.labels.some(code=>report.counts[code]!==turnCounts[code]);
   const analysis=report.analysis;
+  const advanced=window.SPX_ADVANCED_CANDLES;
+  const advancedStale=advanced?.asOf!==report.asOf ||
+    !advanced || Object.keys(advanced.labelsCovered||{}).some(k=>advanced.labelsCovered[k]!==turnCounts[k]);
   window.SPX_CANDLE_PATTERNS=Object.freeze({
     ...report,daily:series,
     labels:report.labels,
     selectedEvents:report.selectedEvents,
     analysis,
+    advanced:advancedStale?null:advanced,
+    advancedStale,
     signals(id){return report.signals[id]||[];},
     stale:mismatched||labelMismatch,
     note:report.caution,
