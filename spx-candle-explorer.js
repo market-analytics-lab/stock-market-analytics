@@ -56,12 +56,12 @@
   let manualLabels=[];
   try {
     const raw=JSON.parse(localStorage.getItem(saveKey)||"[]");
-    if(Array.isArray(raw))manualLabels=raw.filter(x=>x&&/^\\d{4}-\\d{2}-\\d{2}$/.test(x.date)&&
+    if(Array.isArray(raw))manualLabels=raw.filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&
       ["dH","dL","JH","JL"].includes(x.code)).slice(0,500);
   } catch(_) { manualLabels=[]; }
   function shareText(){
     return manualLabels.slice().sort((a,b)=>a.date.localeCompare(b.date)).
-      map(x=>x.date+" "+x.code).join("\\n");
+      map(x=>x.date+" "+x.code).join("\n");
   }
   function persist(){
     try { localStorage.setItem(saveKey,JSON.stringify(manualLabels)); }
