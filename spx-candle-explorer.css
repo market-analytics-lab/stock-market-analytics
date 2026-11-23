@@ -44,3 +44,13 @@
 .candle-backcast-caution{font-size:11px;line-height:1.6;color:var(--muted);margin:5px 0 12px;}
 .candle-backcast-caution strong{color:var(--text);}
 @media(max-width:680px){.candle-backcast-toolbar select{width:100%;max-width:none}}
+
+/* Dated JL watch is model-only unless confirmed by user labels. */
+.candle-latest-jl{display:flex;align-items:baseline;flex-wrap:wrap;gap:10px;
+  border:1px solid var(--border);border-radius:7px;
+  background:var(--surface-2);padding:12px 14px;color:var(--muted);font-size:12px;line-height:1.6;}
+.candle-latest-jl strong{color:var(--text);}
+.candle-latest-jl small{display:block;flex-basis:100%;font-size:11px;color:var(--muted);}
+.candle-explorer #candle-expanded-recent-toggle.active{border-color:#a78bfa;color:#a78bfa;}
+.candle-explorer #candle-expanded-summary{max-width:1100px;}
+@media(max-width:620px){.candle-latest-jl{padding:10px 9px}.candle-pattern-table th{white-space:nowrap;}}
