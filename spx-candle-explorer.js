@@ -49,7 +49,10 @@
   if(legacy.length)legacyLine.setData(legacy);
   const markerApi=typeof lib.createSeriesMarkers==="function"?lib.createSeriesMarkers(candles,[]):null;
   const byDate=new Map(full.map(b=>[b.time,b]));
-  let code="JL",id=null,showSignals=true,logScale=false;
+  let code="JL",id=null,showSignals=false,logScale=false;
+  // One chart flag per trading date. The permanent GitHub labels take
+  // precedence over temporary annotations and research pattern dots.
+  const permanent=new Map((window.SPX_TURNING?.points||[]).map(p=>[p.date,p.code]));
   // Optional research labels are local to this browser until the user
   // explicitly copies and shares their dates. No GitHub writes occur here.
   const saveKey="spx-additional-turns-v1";
@@ -57,8 +60,18 @@
   let manualLabels=[];
   try {
     const raw=JSON.parse(localStorage.getItem(saveKey)||"[]");
-    if(Array.isArray(raw))manualLabels=raw.filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&
-      ["dH","dL","JH","JL","RH","RL"].includes(x.code)).slice(0,500);
+    if(Array.isArray(raw)){
+      // Previously shared annotations can remain in browser storage after
+      // they have been committed to GitHub; never render or export them twice.
+      const onePerDate=new Map();
+      for(const x of raw){
+        if(!x||!/^\d{4}-\d{2}-\d{2}$/.test(x.date)||
+          !["dH","dL","JH","JL","RH","RL"].includes(x.code)||
+          permanent.has(x.date))continue;
+        onePerDate.set(x.date,{date:x.date,code:x.code});
+      }
+      manualLabels=[...onePerDate.values()].slice(-500);
+    }
   } catch(_) { manualLabels=[]; }
   function shareText(){
     return manualLabels.slice().sort((a,b)=>a.date.localeCompare(b.date)).
@@ -92,16 +105,18 @@
   }
   function plotMarkers(){
     if(!markerApi)return;
-    const markers=[];
-    for(const e of model.selectedEvents)for(const time of e.dates){
+    const uniqueByDay=new Map();
+    for(const [time,turnCode] of permanent){
       if(!byDate.has(time))continue;
-      markers.push({time,position:e.code.endsWith("H")?"aboveBar":"belowBar",
-        color:colors[e.code],shape:e.code.endsWith("H")?"arrowDown":"arrowUp",
-        text:e.code,size:e.code.startsWith("J")?2:1});
+      uniqueByDay.set(time,{
+        time,position:turnCode.endsWith("H")?"aboveBar":"belowBar",
+        color:colors[turnCode],shape:turnCode.endsWith("H")?"arrowDown":"arrowUp",
+        text:turnCode,size:turnCode.startsWith("J")?2:1
+      });
     }
     for(const own of manualLabels){
-      if(!byDate.has(own.date))continue;
-      markers.push({
+      if(!byDate.has(own.date)||uniqueByDay.has(own.date))continue;
+      uniqueByDay.set(own.date,{
         time:own.date,position:own.code.endsWith("H")?"aboveBar":"belowBar",
         color:colors[own.code],shape:own.code.endsWith("H")?"arrowDown":"arrowUp",
         text:own.code+"*",size:own.code.startsWith("J")?2:1
@@ -109,11 +124,16 @@
     }
     if(showSignals&&id){
       for(const time of model.signals(id)){
-        markers.push({time,position:code.endsWith("H")?"aboveBar":"belowBar",
-          color:"#bca4ff",shape:"circle",text:time<model.splitDate?"P•":"T•",size:1});
+        // A research dot must not obscure an already labeled turning point.
+        if(!byDate.has(time)||uniqueByDay.has(time))continue;
+        uniqueByDay.set(time,{
+          time,position:code.endsWith("H")?"aboveBar":"belowBar",
+          color:"#bca4ff",shape:"circle",
+          text:time<model.splitDate?"P•":"T•",size:1
+        });
       }
     }
-    markers.sort((a,b)=>a.time.localeCompare(b.time));
+    const markers=[...uniqueByDay.values()].sort((a,b)=>a.time.localeCompare(b.time));
     markerApi.setMarkers(markers);
   }
   function drawTable(){
@@ -138,7 +158,13 @@
       row.appendChild(node("td","",item.test.fired?item.test.hits+"/"+item.test.fired+" ("+p(item.test.precision)+", "+item.test.eventsCovered+" unique turns)":"0 fires (not tested)"));
       const button=node("button","candle-explorer-pick",item.id===id?"Showing":"Show");
       button.type="button";button.setAttribute("aria-label","Show "+item.name);
-      button.addEventListener("click",()=>{id=item.id;render();});
+      button.addEventListener("click",()=>{
+        id=item.id;showSignals=true;
+        const toggle=get("candle-overlay-toggle");
+        toggle?.classList.toggle("active",true);
+        toggle?.setAttribute("aria-pressed","true");
+        render();
+      });
       const last=node("td","");last.appendChild(button);row.appendChild(last);body.appendChild(row);
     });
     table.appendChild(body);panel.appendChild(table);
@@ -153,7 +179,7 @@
       "; later dates were held out. Signals precede a user-supplied "+code+" turn by 1–3 trading sessions.";
     get("candle-explorer-coverage").textContent=
       target.status==="awaiting-user-labels"
-       ?"No "+code+" bear-market turning dates have been supplied yet. The category is ready for your labeling, but the model has no training data or performance statistics for it."
+       ?"No "+code+" examples have been supplied. The category is ready for labeling, without manufactured performance statistics."
        :"Training (1997–2018): "+model.trainCount.toLocaleString("en-US")+" decision sessions; "+
         b.trainLabels+" labeled "+code+" dates / "+b.trainWindows+
         " precursor sessions. Holdout (2019–present): "+model.testCount.toLocaleString("en-US")+
@@ -162,14 +188,18 @@
     const summary=get("candle-label-summary");
     if(summary)summary.textContent=
       "Saved historical turn labels: "+model.labels.map(x=>x+" "+(model.counts[x]||0)).join(" · ")+
-      " (159 original and newly supplied labels). "+
+      " ("+permanent.size+" unique confirmed dates; one visible flag per date). "+
       (model.stale?"Warning: historical research report needs refresh; chart dates may be newer than its fitted model.":"The model report and chart datasets agree.");
     const matches=model.latestMatches[code];
     const last=get("candle-explorer-current");last.replaceChildren();
     last.appendChild(node("strong","","Latest indexed candle ("+model.dateEnd+"): "));
     last.appendChild(node("span","",target.status==="awaiting-user-labels"
-      ?"Awaiting bear-market examples — no "+code+" model trained."
+      ?"Awaiting labeled examples — no "+code+" model trained."
       :matches.length+" of the ten highest-ranked training rules for "+code+" match."));
+    if(target.status==="very-small-sample"){
+      last.appendChild(node("small","","ONLY "+target.baseline.trainLabels+
+        " labeled bear-market turns in training; patterns are illustrative, not validated."));
+    }
     last.appendChild(node("small","","A pattern match is not a probability, trade signal, or confirmed reversal."));
     const selected=target.leaders.find(x=>x.id===id);
     const info=get("candle-explorer-selected");info.replaceChildren();
@@ -190,7 +220,13 @@
     drawTable();textInfo();plotMarkers();
   }
   for(const button of shell.querySelectorAll("[data-candle-target]"))
-    button.addEventListener("click",()=>{code=button.dataset.candleTarget;id=null;render();});
+    button.addEventListener("click",()=>{
+      code=button.dataset.candleTarget;id=null;showSignals=false;
+      const toggle=get("candle-overlay-toggle");
+      toggle?.classList.toggle("active",false);
+      toggle?.setAttribute("aria-pressed","false");
+      render();
+    });
   for(const button of shell.querySelectorAll("[data-candle-range]"))
     button.addEventListener("click",()=>{
       for(const b of shell.querySelectorAll("[data-candle-range]")){
@@ -223,11 +259,19 @@
     if(!byDate.has(date))return;
     const selected=labelType?.value||"dH";
     if(!["dH","dL","JH","JL","RH","RL"].includes(selected))return;
-    if(model.selectedEvents.some(e=>e.code===selected&&e.dates.includes(date)) ||
-      manualLabels.some(e=>e.date===date&&e.code===selected)){
-      showManualStatus(date+" "+selected+" is already labeled.");return;
+    if(permanent.has(date)){
+      showManualStatus(date+" is already permanently labeled "+permanent.get(date)+
+        ". Existing chart dates are displayed once. Send any correction here instead.");return;
     }
-    manualLabels.push({date,code:selected});
+    const existing=manualLabels.find(x=>x.date===date);
+    if(existing){
+      if(existing.code===selected){
+        showManualStatus(date+" "+selected+" is already labeled once.");return;
+      }
+      existing.code=selected; // Edit the existing annotation instead of doubling it.
+    } else {
+      manualLabels.push({date,code:selected});
+    }
     manualLabels=manualLabels.slice(-500);
     persist();plotMarkers();
     showManualStatus("Saved "+date+" "+selected+" locally. Total new labels: "+manualLabels.length+
@@ -251,7 +295,8 @@
       showManualStatus("Select and copy the dates in the text box, then paste them in the chat.");
     }
   });
-  showManualStatus(manualLabels.length+" added turn labels saved locally. "+ 
+  persist(); // Clean up browser-saved duplicates already incorporated into GitHub.
+  showManualStatus(manualLabels.length+" additional unsubmitted turn dates saved locally. "+ 
     "Only dates explicitly shared in chat can be added to the historical pattern research.");
 
   get("candle-fit")?.addEventListener("click",()=>chart.timeScale().fitContent());
