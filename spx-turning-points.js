@@ -37,12 +37,18 @@
     ["1998-06-15", "dL"],
     ["1998-07-17", "JH"],
     ["1998-08-31", "JL"],
+    ["1998-09-23", "dH"],
+    ["1998-10-08", "dL"],
+    ["1998-11-27", "dH"],
+    ["1998-12-14", "dL"],
     ["1999-05-13", "dH"],
     ["1999-05-27", "dL"],
     ["1999-07-16", "JH"],
     ["1999-10-15", "JL"],
     ["1999-12-31", "dH"],
     ["2000-02-25", "dL"],
+    ["2000-03-24", "RH"],
+    ["2002-10-09", "RL"],
     ["2002-11-27", "JH"],
     ["2003-03-11", "JL"],
     ["2004-02-11", "JH"],
@@ -53,18 +59,26 @@
     ["2005-01-24", "dL"],
     ["2005-03-07", "JH"],
     ["2005-04-20", "JL"],
+    ["2005-06-17", "dH"],
+    ["2005-06-27", "dL"],
     ["2005-08-03", "JH"],
     ["2005-10-13", "JL"],
+    ["2005-12-14", "dH"],
+    ["2005-12-30", "dL"],
     ["2006-01-11", "dH"],
     ["2006-02-07", "dL"],
     ["2006-05-05", "JH"],
     ["2006-06-13", "JL"],
+    ["2006-07-03", "dH"],
+    ["2006-07-17", "dL"],
     ["2007-02-20", "dH"],
     ["2007-03-05", "dL"],
     ["2007-06-04", "dH"],
     ["2007-06-07", "dL"],
     ["2007-07-19", "JH"],
     ["2007-08-15", "JL"],
+    ["2007-10-09", "RH"],
+    ["2009-03-09", "RL"],
     ["2009-06-12", "dH"],
     ["2009-07-10", "dL"],
     ["2009-09-22", "dH"],
@@ -157,6 +171,8 @@
     ["2021-10-04", "dL"],
     ["2021-11-18", "dH"],
     ["2021-12-01", "dL"],
+    ["2022-01-03", "RH"],
+    ["2022-10-12", "RL"],
     ["2022-11-30", "dH"],
     ["2022-12-28", "dL"],
     ["2023-02-02", "dH"],
@@ -173,8 +189,12 @@
     ["2024-10-31", "dL"],
   ].map(([date,code]) => ({date,code}));
 
-  const points = [...priorPoints, ...recentPoints]
-    .sort((a,b)=>a.date.localeCompare(b.date)||a.code.localeCompare(b.code))
+  // Exactly one label per SPX trading date, even when the same observation
+  // is submitted in more than one batch. Later corrections take precedence.
+  const byDate = new Map();
+  for (const point of [...recentPoints, ...priorPoints]) byDate.set(point.date, point);
+  const points = [...byDate.values()]
+    .sort((a,b)=>a.date.localeCompare(b.date))
     .map(p=>Object.freeze(p));
   const counts = Object.freeze(["dH","dL","JH","JL","RH","RL"]
     .reduce((acc,code)=>(acc[code]=points.filter(p=>p.code===code).length,acc),{}));
