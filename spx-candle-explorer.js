@@ -49,6 +49,30 @@
   const markerApi=typeof lib.createSeriesMarkers==="function"?lib.createSeriesMarkers(candles,[]):null;
   const byDate=new Map(full.map(b=>[b.time,b]));
   let code="JL",id=null,showSignals=true,logScale=false;
+  // Optional research labels are local to this browser until the user
+  // explicitly copies and shares their dates. No GitHub writes occur here.
+  const saveKey="spx-additional-turns-v1";
+  let isMarking=false;
+  let manualLabels=[];
+  try {
+    const raw=JSON.parse(localStorage.getItem(saveKey)||"[]");
+    if(Array.isArray(raw))manualLabels=raw.filter(x=>x&&/^\\d{4}-\\d{2}-\\d{2}$/.test(x.date)&&
+      ["dH","dL","JH","JL"].includes(x.code)).slice(0,500);
+  } catch(_) { manualLabels=[]; }
+  function shareText(){
+    return manualLabels.slice().sort((a,b)=>a.date.localeCompare(b.date)).
+      map(x=>x.date+" "+x.code).join("\\n");
+  }
+  function persist(){
+    try { localStorage.setItem(saveKey,JSON.stringify(manualLabels)); }
+    catch(_) { /* Some browsers block local storage; export still works. */ }
+  }
+  function showManualStatus(message){
+    const area=get("candle-label-status");
+    if(area)area.textContent=message;
+    const output=get("candle-label-output");
+    if(output)output.value=shareText();
+  }
   function paintTheme(){
     const light=document.documentElement.dataset.theme==="light";
     chart.applyOptions({layout:{background:{type:"solid",color:light?"#fff":"#101a2a"},
@@ -73,6 +97,14 @@
       markers.push({time,position:e.code.endsWith("H")?"aboveBar":"belowBar",
         color:colors[e.code],shape:e.code.endsWith("H")?"arrowDown":"arrowUp",
         text:e.code,size:e.code.startsWith("J")?2:1});
+    }
+    for(const own of manualLabels){
+      if(!byDate.has(own.date))continue;
+      markers.push({
+        time:own.date,position:own.code.endsWith("H")?"aboveBar":"belowBar",
+        color:colors[own.code],shape:own.code.endsWith("H")?"arrowDown":"arrowUp",
+        text:own.code+"*",size:own.code.startsWith("J")?2:1
+      });
     }
     if(showSignals&&id){
       for(const time of model.signals(id)){
@@ -153,6 +185,58 @@
     showSignals=!showSignals;event.currentTarget.classList.toggle("active",showSignals);
     event.currentTarget.setAttribute("aria-pressed",String(showSignals));plotMarkers();
   });
+
+  const labelMode=get("candle-label-toggle");
+  const labelType=get("candle-label-type");
+  const labelUndo=get("candle-label-undo");
+  const labelCopy=get("candle-label-copy");
+  labelMode?.addEventListener("click",event=>{
+    isMarking=!isMarking;
+    event.currentTarget.classList.toggle("active",isMarking);
+    event.currentTarget.setAttribute("aria-pressed",String(isMarking));
+    event.currentTarget.textContent="Click candle to label: "+(isMarking?"On":"Off");
+    showManualStatus(isMarking?"Choose a turn type, then click a daily candle. Your labels are saved only in this browser.":
+      manualLabels.length+" additional turning-point dates saved in this browser.");
+  });
+  if(typeof chart.subscribeClick==="function")chart.subscribeClick(param=>{
+    if(!isMarking||!param?.time)return;
+    const t=param.time;
+    const date=typeof t==="string"?t:typeof t==="object"?
+      [t.year,String(t.month).padStart(2,"0"),String(t.day).padStart(2,"0")].join("-"):"";
+    if(!byDate.has(date))return;
+    const selected=labelType?.value||"dH";
+    if(!["dH","dL","JH","JL"].includes(selected))return;
+    if(model.selectedEvents.some(e=>e.code===selected&&e.dates.includes(date)) ||
+      manualLabels.some(e=>e.date===date&&e.code===selected)){
+      showManualStatus(date+" "+selected+" is already labeled.");return;
+    }
+    manualLabels.push({date,code:selected});
+    manualLabels=manualLabels.slice(-500);
+    persist();plotMarkers();
+    showManualStatus("Saved "+date+" "+selected+" locally. Total new labels: "+manualLabels.length+
+      ". Copy the list and send it in the chat to incorporate it into the model.");
+  });
+  labelUndo?.addEventListener("click",()=>{
+    if(!manualLabels.length){showManualStatus("No added labels to undo.");return;}
+    const gone=manualLabels.pop();persist();plotMarkers();
+    showManualStatus("Undid "+gone.date+" "+gone.code+". "+manualLabels.length+" additional labels remain.");
+  });
+  labelCopy?.addEventListener("click",async()=>{
+    const data=shareText();
+    if(!data){showManualStatus("No additional high/low labels yet. Click candles to create them.");return;}
+    try {
+      if(!navigator.clipboard?.writeText)throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(data);
+      showManualStatus("Copied "+manualLabels.length+" dates. Paste these dates in our chat for model training.");
+    } catch(_) {
+      const output=get("candle-label-output");
+      if(output){output.focus();output.select();}
+      showManualStatus("Select and copy the dates in the text box, then paste them in the chat.");
+    }
+  });
+  showManualStatus(manualLabels.length+" added turn labels saved locally. "+ 
+    "Only dates explicitly shared in chat can be added to the historical pattern research.");
+
   get("candle-fit")?.addEventListener("click",()=>chart.timeScale().fitContent());
   const dateInput=get("candle-date-jump");
   if(dateInput){dateInput.min=firstDate;dateInput.max=lastDate;dateInput.value=lastDate;}
