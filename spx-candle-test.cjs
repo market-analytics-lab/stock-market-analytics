@@ -1,6 +1,6 @@
 "use strict";
 /*
- * Validate 159 user-labeled SPX dates, six categories, isolated holdout,
+ * Validate 175 user-labeled SPX dates, six categories, isolated holdout,
  * offline model determinism and immunity to altered post-2018 prices.
  */
 const fs=require("node:fs");
@@ -16,9 +16,9 @@ const labels=ctx.window.SPX_TURNING;
 const report=ctx.window.SPX_CANDLE_REPORT;
 const model=ctx.window.SPX_CANDLE_PATTERNS;
 const history=ctx.window.SPX_LONG_OHLC;
-assert.equal(labels.points.length,159);
+assert.equal(labels.points.length,175);
 assert.deepEqual(JSON.parse(JSON.stringify(labels.codes)),["dH","dL","JH","JL","RH","RL"]);
-assert.deepEqual(JSON.parse(JSON.stringify(labels.counts)),{dH:58,dL:58,JH:22,JL:21,RH:0,RL:0});
+assert.deepEqual(JSON.parse(JSON.stringify(labels.counts)),{dH:63,dL:63,JH:22,JL:21,RH:3,RL:3});
 assert(labels.points.every((p,i)=>i===0||labels.points[i-1].date<=p.date));
 const dates=new Set(history.daily.map(row=>row[0]));
 assert(labels.points.every(p=>dates.has(p.date)),"Every historic user label must correspond to a real SPX daily session");
@@ -41,10 +41,16 @@ for(const code of ["dH","dL","JH","JL"]) {
   }
 }
 for(const code of ["RH","RL"]){
-  assert.equal(report.analysis[code].status,"awaiting-user-labels");
-  assert.equal(report.analysis[code].leaders.length,0);
-  assert.equal(report.analysis[code].baseline.trainLabels,0);
-  assert.equal(report.analysis[code].baseline.testLabels,0);
+  const group=report.analysis[code];
+  assert.equal(group.baseline.trainLabels,2,"Two earlier bear cycles should be in training");
+  assert.equal(group.baseline.testLabels,1,"2022 bear cycle stays held out");
+  assert.equal(group.status,"very-small-sample");
+  assert(group.leaders.length>=1,"Case study should find descriptive RH/RL features");
+  for(const rule of group.leaders){
+    assert.equal(rule.train.eventsCovered,2,"Both earlier bear cycles must be represented");
+    assert(rule.test.eventsCovered<=1);
+    assert(model.signals(rule.id).every(time=>dates.has(time)));
+  }
 }
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),"spx-candle-regression-"));
 try {
@@ -91,4 +97,4 @@ try {
 console.log("SPX candlestick research passed:",
   report.candidatesGenerated,"rules; 159 labeled turning points; training",
   report.trainCount,"sessions, holdout",report.testCount,
-  "; RH/RL correctly untrained; no future-data leakage.");
+  "; RH/RL flagged as tiny samples; no future-data leakage.");
