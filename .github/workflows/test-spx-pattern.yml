@@ -8,6 +8,8 @@ on:
       - 'spx-candle-*.js'
       - 'spx-candle-*.css'
       - 'spx-candle-test.cjs'
+      - 'spx-turning-points.js'
+      - 'generate_spx_candle_report.cjs'
       - 'spx-long-ohlc.js'
       - 'spx-long-test.cjs'
       - 'backfill_spx_daily.py'
