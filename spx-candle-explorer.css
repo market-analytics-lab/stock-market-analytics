@@ -26,3 +26,11 @@
 .candle-explorer-legend{font-size:11px;color:var(--muted);line-height:1.65;margin:10px 0;}
 .candle-explorer-note{color:var(--muted);font-size:11px;line-height:1.65;margin:10px 0 0;}
 @media(max-width:720px){.candle-explorer{padding:12px 9px;margin-top:15px}.candle-explorer-surface{height:390px}.candle-explorer-toolbar{gap:5px}.candle-explorer button{padding:7px 8px}}
+
+/* Label dates directly on historical SPX candles, stored only on this device. */
+.candle-label-toolbar { display:flex;flex-wrap:wrap;align-items:center;gap:9px;padding:11px 0 7px;border-top:1px solid var(--border);margin-top:4px;font-size:11px;color:var(--muted); }
+.candle-label-toolbar select{border:1px solid var(--border);border-radius:5px;padding:7px 8px;background:var(--surface-2);color:var(--text);font:inherit;max-width:170px;}
+.candle-label-toolbar label{color:var(--muted);}
+.candle-label-toolbar #candle-label-status{flex:1 1 220px;line-height:1.4;font-size:10px;}
+.candle-label-output{width:100%;max-height:110px;resize:vertical;box-sizing:border-box;background:var(--surface-2);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:7px 9px;font-size:11px;line-height:1.4;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;}
+.candle-explorer-toolbar input[type=date]{font:inherit;font-size:11px;padding:7px 8px;border:1px solid var(--border);border-radius:5px;background:var(--surface-2);color:var(--text);}
