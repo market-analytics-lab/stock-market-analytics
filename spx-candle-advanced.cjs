@@ -407,7 +407,7 @@ const currentVotes=Object.fromEntries(ids.map(k=>[k,consensusOnDay(k,N-1)]));
 // within fifteen sessions. It is NOT a true user-defined JL.
 const pricePivots=[];
 let lastAcceptedPivot=-99;
-for(let i=warmup+65;i+15<N;i++){
+for(let i=warmup+65;i+5<N;i++){
   if(bars[i].date<"1997-01-01"||i-lastAcceptedPivot<35)continue;
   if(!goodContext[i]||close[i]>lowest(close,i,65))continue;
   let localBottom=true;
@@ -416,7 +416,7 @@ for(let i=warmup+65;i+15<N;i++){
   }
   if(!localBottom)continue;
   let confirmedIndex=-1;
-  for(let k=5;k<=15;k++){
+  for(let k=5;k<=Math.min(15,N-1-i);k++){
     if(close[i+k]>=close[i]*1.04){confirmedIndex=i+k;break;}
   }
   if(confirmedIndex<0)continue;
