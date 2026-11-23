@@ -17,7 +17,8 @@
   const lastDate=full.at(-1).time, firstDate=full[0].time;
   const flatCount=full.filter(b=>Math.abs(b.high-b.low)<=.01).length;
   const firstWickDate=full.find(b=>b.high-b.low>.01)?.time||null;
-  const colors={dH:"#f8a23d",dL:"#31c88a",JH:"#f16475",JL:"#6397ff"};
+  const colors={dH:"#f8a23d",dL:"#31c88a",JH:"#f16475",JL:"#6397ff",
+    RH:"#b86cf4",RL:"#23c9c9"};
   const p=v=>v===null?"N/A":(v*100).toFixed(1)+"%";
   const node=(tag,cl,value)=>{
     const e=document.createElement(tag);if(cl)e.className=cl;
@@ -57,7 +58,7 @@
   try {
     const raw=JSON.parse(localStorage.getItem(saveKey)||"[]");
     if(Array.isArray(raw))manualLabels=raw.filter(x=>x&&/^\d{4}-\d{2}-\d{2}$/.test(x.date)&&
-      ["dH","dL","JH","JL"].includes(x.code)).slice(0,500);
+      ["dH","dL","JH","JL","RH","RL"].includes(x.code)).slice(0,500);
   } catch(_) { manualLabels=[]; }
   function shareText(){
     return manualLabels.slice().sort((a,b)=>a.date.localeCompare(b.date)).
@@ -118,7 +119,13 @@
   function drawTable(){
     const panel=get("candle-explorer-patterns");panel.replaceChildren();
     const patterns=model.analysis[code].leaders.slice(0,12);
-    if(!patterns.length){panel.appendChild(node("p","candle-warning","No rule met minimum training support."));return;}
+    if(!patterns.length){
+      const waiting=model.analysis[code].status==="awaiting-user-labels";
+      panel.appendChild(node("p","candle-warning",waiting
+        ?"Awaiting "+code+" dates. Select this bear-market category above, label its historical candles, and send your saved date list. No pattern or probability is being invented."
+        :"No candidate patterns met the minimum training support for this class."));
+      return;
+    }
     const table=node("table","candle-pattern-table");
     const head=node("thead",""),tr=node("tr","");
     ["Discovered precursor rule","Earlier: hits / fires","Later holdout: hits / fires","Chart"].forEach(t=>tr.appendChild(node("th","",t)));
@@ -139,21 +146,31 @@
   function textInfo(){
     const target=model.analysis[code],b=target.baseline;
     get("candle-explorer-status").textContent=
-      full.length.toLocaleString("en-US")+" archived index trading dates displayed ("+firstDate+" to "+lastDate+"). "+
-      "The pattern miner currently evaluates "+model.candidatesGenerated.toLocaleString("en-US")+
-      " rules over the "+model.barCount+" labeled-era daily candles ("+model.dateStart+" to "+model.dateEnd+
-      "), not on unlabeled early decades. Training < "+model.splitDate+
-      "; holdout later. Each signal looks 1–3 trading sessions ahead for a "+code+" event." ;
+      full.length.toLocaleString("en-US")+" archived trading dates shown ("+firstDate+" to "+lastDate+"). "+
+      model.candidatesGenerated.toLocaleString("en-US")+" candidate candle rules evaluated against "+
+      model.barCount.toLocaleString("en-US")+" real daily SPX records ("+model.dateStart+" to "+model.dateEnd+
+      "). Historical rule selection uses observations before "+model.splitDate+
+      "; later dates were held out. Signals precede a user-supplied "+code+" turn by 1–3 trading sessions.";
     get("candle-explorer-coverage").textContent=
-      "Earlier: "+model.trainCount+" decision sessions, "+b.trainLabels+" labeled "+code+" dates ("+b.trainWindows+
-      " matching precursor sessions). Later: "+model.testCount+" sessions, "+b.testLabels+
-      " labeled "+code+" dates ("+b.testWindows+" precursor sessions). Earlier baseline "+p(b.train)+".";
+      target.status==="awaiting-user-labels"
+       ?"No "+code+" bear-market turning dates have been supplied yet. The category is ready for your labeling, but the model has no training data or performance statistics for it."
+       :"Training (1997–2018): "+model.trainCount.toLocaleString("en-US")+" decision sessions; "+
+        b.trainLabels+" labeled "+code+" dates / "+b.trainWindows+
+        " precursor sessions. Holdout (2019–present): "+model.testCount.toLocaleString("en-US")+
+        " decision sessions; "+b.testLabels+" labeled "+code+" dates / "+b.testWindows+
+        " precursor sessions. Training baseline: "+p(b.train)+".";
+    const summary=get("candle-label-summary");
+    if(summary)summary.textContent=
+      "Saved historical turn labels: "+model.labels.map(x=>x+" "+(model.counts[x]||0)).join(" · ")+
+      " (159 original and newly supplied labels). "+
+      (model.stale?"Warning: historical research report needs refresh; chart dates may be newer than its fitted model.":"The model report and chart datasets agree.");
     const matches=model.latestMatches[code];
     const last=get("candle-explorer-current");last.replaceChildren();
-    last.appendChild(node("strong","","Latest mined candle ("+model.dateEnd+"): "));
-    last.appendChild(node("span","",matches.length+
-      " of top 10 retrospectively ranked "+code+" precursor rules match."));
-    last.appendChild(node("small","","Not a statistical probability, trade signal, or confirmed high/low."));
+    last.appendChild(node("strong","","Latest indexed candle ("+model.dateEnd+"): "));
+    last.appendChild(node("span","",target.status==="awaiting-user-labels"
+      ?"Awaiting bear-market examples — no "+code+" model trained."
+      :matches.length+" of the ten highest-ranked training rules for "+code+" match."));
+    last.appendChild(node("small","","A pattern match is not a probability, trade signal, or confirmed reversal."));
     const selected=target.leaders.find(x=>x.id===id);
     const info=get("candle-explorer-selected");info.replaceChildren();
     if(selected) {
@@ -162,7 +179,7 @@
         " winning signal days covering "+selected.train.eventsCovered+" distinct turns; later "+
         selected.test.hits+"/"+selected.test.fired+" winning signal days covering "+
         selected.test.eventsCovered+" distinct turns. Training baseline "+p(b.train)+"."));
-      info.appendChild(node("small","","Purple P• marks earlier training occurrences; T• marks later holdout occurrences. Colored arrows mark your 13 given dates."));
+      info.appendChild(node("small","","Purple P• = training occurrence (through 2018); T• = 2019+ holdout occurrence. Colored arrows = your historical labeled dates."));
     }
   }
   function render(){
@@ -205,7 +222,7 @@
       [t.year,String(t.month).padStart(2,"0"),String(t.day).padStart(2,"0")].join("-"):"";
     if(!byDate.has(date))return;
     const selected=labelType?.value||"dH";
-    if(!["dH","dL","JH","JL"].includes(selected))return;
+    if(!["dH","dL","JH","JL","RH","RL"].includes(selected))return;
     if(model.selectedEvents.some(e=>e.code===selected&&e.dates.includes(date)) ||
       manualLabels.some(e=>e.date===date&&e.code===selected)){
       showManualStatus(date+" "+selected+" is already labeled.");return;
@@ -288,7 +305,7 @@
     ". "+flatCount.toLocaleString("en-US")+" historical records have zero reported O–H–L–C range. "+
     "Such observations are price-level references, NOT genuine wick measurements. "+
     "First archived non-flat day: "+(firstWickDate||"unavailable")+
-    ". Prior to additional manual labels, pattern discovery remains restricted to recent 2024+ observations.";
+    ". Candlestick pattern study begins in 1997 and excludes old close-only bars.";
   paintTheme();render();setRange("6M");
   const b=full.at(-1);get("candle-explorer-crosshair").textContent=b.time+" · O "+b.open.toFixed(2)+" H "+b.high.toFixed(2)+" L "+b.low.toFixed(2)+" C "+b.close.toFixed(2);
 })();
