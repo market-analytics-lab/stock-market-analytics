@@ -1,0 +1,53 @@
+name: Backfill genuine historical SPX daily candles
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'backfill_spx_daily.py'
+      - '.github/workflows/backfill-spx-daily.yml'
+
+permissions:
+  contents: write
+  pages: write
+
+concurrency:
+  group: spx-long-history-seed
+  cancel-in-progress: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Check out the existing SPX chart
+        uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verify historical SPX import and OHLC quality
+        run: python -m unittest backfill_spx_test.py
+      - name: Download and validate genuine ^GSPC daily OHLC from 1957 onward
+        run: python backfill_spx_daily.py
+      - name: Commit newly sourced long history if available
+        id: commit
+        shell: bash
+        run: |
+          if git diff --quiet -- spx-long-ohlc.js index.html; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "No new historical observations available."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add spx-long-ohlc.js index.html
+          git commit -m "data: backfill genuine Yahoo SPX daily candles from 1957"
+          git pull --rebase origin main
+          git push origin HEAD:main
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+      - name: Rebuild the published SPX historical candlestick viewer
+        if: steps.commit.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api --method POST "repos/$GITHUB_REPOSITORY/pages/builds"
