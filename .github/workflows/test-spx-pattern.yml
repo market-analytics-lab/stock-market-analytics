@@ -8,6 +8,8 @@ on:
       - 'spx-candle-*.js'
       - 'spx-candle-*.css'
       - 'spx-candle-test.cjs'
+      - 'spx-candle-advanced.cjs'
+      - 'spx-candle-advanced-test.cjs'
       - 'spx-candle-ui-test.cjs'
       - 'spx-turning-points.js'
       - 'generate_spx_candle_report.cjs'
@@ -45,11 +47,13 @@ jobs:
           node --check tv-chart.js
           node --check spx-candle-miner.js
           node --check spx-candle-explorer.js
+          node --check spx-candle-advanced.cjs
       - name: Walk-forward and no-leakage regression test
         run: |
           node spx-pattern-test.cjs
           node spx-candle-test.cjs
           node spx-candle-ui-test.cjs
+          node spx-candle-advanced-test.cjs
           node spx-long-test.cjs
       - name: Verify external context importer
         run: python -m unittest refresh_context_test.py backfill_spx_test.py
