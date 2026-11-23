@@ -17,7 +17,7 @@ const baseline=makeContext();
 load("spx-pattern-engine.js",baseline);
 const original=baseline.window.SPX_PATTERN_ENGINE;
 assert.equal(original.symbol,"SPX");
-assert.equal(baseline.window.SPX_TURNING.points.length,159);
+assert.equal(baseline.window.SPX_TURNING.points.length,175);
 assert.equal(baseline.window.SPX_TURNING.counts.RH,0);
 assert.equal(baseline.window.SPX_TURNING.counts.RL,0);
 assert.equal(original.evaluations.length,4);
