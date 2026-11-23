@@ -39,6 +39,37 @@ The separate [SPX Candlestick Pattern Explorer](https://market-analytics-lab.git
 4. Repeat as needed. Your starred labels appear on the chart and in the date list. They are saved **locally in the current browser**, not automatically uploaded to GitHub.
 5. Click **Copy my dates** and paste the *dates* into your ChatGPT conversation to add them to the permanent model and analyze the older turning-point examples. There is no code to copy or install.
 
+### Expanded, independent candle discovery (November 2026)
+
+The chart now includes a distinct **Expanded pattern recognition** model, computed by `node spx-candle-advanced.cjs` and published as `spx-candle-advanced-data.js`. It uses daily OHLC only—**1,020** candidate feature definitions across **28** descriptive families, yielding **205,892** single and paired hypotheses. Unlike the first engine's manually listed shapes, most rules are automatically generated from multiple time windows:
+
+- **2, 3, 5, 8, 13, 21 and 34-session** lookbacks for nearby hammer/shooting-star/doji/engulfing/inside/outside formations, counts of recent patterns, and gap clusters.
+- **Candlestick geometry and texture:** upper/lower-wick dominance, wick clusters, small/large bodies, candles near multiweek highs/lows, red/green streaks and range compression.
+- **Price and volatility structure:** 5-to-34-session momentum, distance above or below moving averages, 5-to-34-session range position, ATR shifts, fresh support/resistance failures and gap reversals.
+- **Candle interactions:** a hammer 5 sessions ago followed by weaker prices, a star followed by rally failure, wicks surrounding a rolling low, intraday breakout failures and volatility-expansion after contraction.
+- **Exploratory calendar/volatility descriptors:** weekdays, short versus long volatility and other combinations. These are purely tested hypotheses; no causal market mechanism is assumed.
+
+**Three-stage chronological evidence:** use **1997–2014** training (4,527 decision sessions), **2015–2018** internal validation (1,003 sessions), and a separately reported **2019–2026** later holdout (1,981 sessions). The last stage does not select model patterns. The dashboard shows training, validation, and later-period hit rates plus *distinct labeled turns* rather than only successful preceding candles. A 1–3-session embargo prevents training on labels that could occur in the next evaluation period.
+
+**Important result:** this expanded search is not automatically better. In the initial test, the highest-ranked JH and JL combinations recorded **zero hits in their first displayed 2019+ occurrences**. The new dashboard shows those failures. Searching 205,892 correlated hypotheses against sparse turning-point labels can produce severe multiple-testing artifacts; even a strong-looking training rule should not be trusted without prospective validation.
+
+### Latest JL monitor
+
+The **Latest JL** readout on the second chart separates:
+
+- **Last confirmed/user-labeled JL date** (currently **March 30, 2026**).
+- **Most recent expanded-model JL setup date** (initial data: **November 5, 2026**, not a confirmed low; its next 1–3 trading-session candidate window had passed by November 20).
+- **Today's latest completed SPX candle** and whether enough frozen rules matched to constitute a new setup (initial November 20 OHLC: **no new JL setup**).
+- **Independent original time-gap watch window** (November 23–December 7, 2026 based on the October 6 JH; unverified).
+
+These dates are updated from the generated SPX model after the existing 3:30 PM America/Chicago daily refresh. **A setup is not a known future JL date**; its trigger date only suggests a possibility one to three subsequent trading sessions later. No future date is falsely marked as a confirmed JL.
+
+### Historical and recent marker toggles
+
+The **Show model guesses** historical overlay can choose **Expanded candle recognition** (new default) or **Original pattern recognition**, and filter by label. The expanded default uses fewer rule-consensus candidates in 1962–1996; the original older scan is still available. The optional **Recent expanded-model setups** toggle shows distinct `dH~`, `dL~`, `JH~`, `JL~` circles on 2025+ historical candles, without overwriting confirmed arrows or browser labels. Both overlays are off by default.
+
+Tests: `node spx-candle-advanced-test.cjs` checks reproducibility and verifies that changing 2019+ prices cannot change the rules selected using 1997–2018, while `node spx-candle-ui-test.cjs` checks control behavior and one marker per day.
+
 ### Toggleable historical model guesses — **1962–1996**
 
 The second chart now has a separate **Show model guesses: On/Off** control. It plots **retrospective pattern hypotheses** on genuine daily SPX observations between February 1962 and December 1996, **before any of the supplied 1997+ user labels**. Enabling the control navigates to 1987–1996 by default; the **View 1987–96** shortcut and **Jump to Date** input allow exploration of other years. The companion category filter can show dH, dL, JH, JL, RH, RL, all six, or the default **four moderate/major classes without the very small-sample bear classes**.
