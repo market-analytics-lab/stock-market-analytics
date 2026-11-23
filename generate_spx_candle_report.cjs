@@ -9,7 +9,7 @@
  *
  * Development period: 1997-01-01 through 2018-12-31.
  * Holdout: 2019-01-01 onward; keep 3-session label embargo.
- * RH/RL have zero initial labels and are "awaiting examples", NOT zero skill.
+ * RH/RL have only TWO pre-2019 labeled events each: case studies, NOT validated skill.
  *
  * WARNING: Many candidate rules / correlated signals => overfitting risk.
  * Rankings and holdout results are descriptive, not validated trade advice.
@@ -25,7 +25,9 @@ for(const file of [process.env.SPX_LONG_OHLC_INPUT||"spx-long-ohlc.js","spx-turn
 const long=sandbox.window.SPX_LONG_OHLC;
 const turns=sandbox.window.SPX_TURNING;
 assert(long?.symbol==="SPX"&&turns?.points?.length>0);
-const daily=long.daily.filter(row=>row[0]>="1996-10-01").map(
+// Include earlier authentic daily candles to apply the already-selected 1997+
+  // rules BACKWARDS. None of these pre-1997 observations are training labels.
+const daily=long.daily.filter(row=>row[0]>="1962-01-02").map(
   ([time,open,high,low,close])=>({time,open,high,low,close})
 );
 const N=daily.length, warmup=31, forward=3;
@@ -189,7 +191,7 @@ function coverage(c,code,mask){
 }
 function candidateSignals(c){
   const out=[];
-  for(let i=warmup;i<N;i++)if(isBit(c.a.bits,i)&&(!c.b||isBit(c.b.bits,i)))out.push(daily[i].time);
+  for(let i=warmup;i<N;i++)if(daily[i].time>=TRAIN_START&&isBit(c.a.bits,i)&&(!c.b||isBit(c.b.bits,i)))out.push(daily[i].time);
   return out;
 }
 const summary={};
@@ -243,17 +245,95 @@ for(const code of codes){
     status:leaders.length?(verySmallSample?"very-small-sample":"research"):
       "insufficient-pattern-support"};
 }
+/*
+ * BACK-CAST EXPLORER: apply the frozen 1997-2018 pattern rankings to the
+ * genuine earlier 1962-1996 OHLC. This is NOT a valid OOS forecast, since
+ * later prices and human labels selected the rules.
+ *
+ * We mark PRECURSOR CANDLE DATES, not actual highs/lows. The original
+ * target is a human-labeled turn 1-3 trading sessions after the signal.
+ * A 7-session full-range integrity gate rejects vendor flat-OHLC evidence.
+ *
+ * Several correlated rules may vote together. The vote tally is an
+ * informal agreement indicator, NOT calibrated confidence or probability.
+ * Suppression/cooldowns are fixed for chart legibility, not optimized.
+ */
+const HIST_END="1997-01-01";
+const familyCooldown=Object.freeze({dH:15,dL:15,JH:25,JL:25,RH:60,RL:60});
+const MIN_VOTES=Object.freeze({dH:5,dL:5,JH:5,JL:5,RH:6,RL:6});
+const historicalVotes=[];
+const completeRange=new Uint8Array(N);
+for(let i=7;i<N;i++){
+  let good=true;
+  for(let lag=0;lag<=7;lag++){
+    if(!validRange(i-lag)){good=false;break;}
+  }
+  if(good)completeRange[i]=1;
+}
+for(const code of codes){
+  const leaders=summary[code].leaders.slice(0,8);
+  if(leaders.length<MIN_VOTES[code])continue;
+  const lookup=new Map(candidates.map(c=>[c.id,c]));
+  const rules=leaders.map(l=>lookup.get(l.id)).filter(Boolean);
+  if(rules.length<MIN_VOTES[code])continue;
+  for(let i=warmup;i<N&&daily[i].time<HIST_END;i++){
+    if(!completeRange[i])continue;
+    let votes=0;
+    for(const r of rules) {
+      if(isBit(r.a.bits,i)&&(!r.b||isBit(r.b.bits,i)))votes++;
+    }
+    if(votes>=MIN_VOTES[code])historicalVotes.push({
+      index:i,date:daily[i].time,code,votes,outOf:rules.length
+    });
+  }
+}
+// Assign at most one suggested category to each date. Keep the strongest
+// group agreement; the tie break is deterministic, not an event preference.
+historicalVotes.sort((a,b)=>a.index-b.index||b.votes-a.votes||
+  a.code.localeCompare(b.code));
+const historicalCandidates=[];
+let lastAny=-Infinity;
+const lastCode=Object.fromEntries(codes.map(code=>[code,-Infinity]));
+const topAtDate=new Map();
+for(const s of historicalVotes){
+  const p=topAtDate.get(s.date);
+  if(!p||s.votes>p.votes||s.votes===p.votes&&s.code<p.code)
+    topAtDate.set(s.date,s);
+}
+for(const s of [...topAtDate.values()].sort((a,b)=>a.index-b.index)){
+  if(s.index-lastCode[s.code]<familyCooldown[s.code]||s.index-lastAny<10)continue;
+  // ? marks a hypothetical pattern PRECURSOR, not a confirmed extrema.
+  historicalCandidates.push({date:s.date,code:s.code,votes:s.votes,outOf:s.outOf});
+  lastCode[s.code]=s.index;
+  lastAny=s.index;
+}
+const historicalBackcast={
+  start:daily[0].time,end:"1996-12-31",firstDataWithTrueRange:"1962-01-02",
+  sourceRulesFrom:"1997–2018 labeled-data discovery",
+  chosenTopRulesPerType:8,minimumAgreeingRules:MIN_VOTES,
+  noNewTrainingLabels:true,signalLeadTradingDays:[1,3],
+  nonflatLookbackDays:8,
+  note:"Retrospective model suggestions, NOT verified highs/lows. Selection used future-era 1997–2018 labels; this is a backward transfer study, not an out-of-sample test. Historical markers sit on precursor candles 1–3 trading days BEFORE potential turns. Correlated rule votes are not independent probabilities. RH/RL each have only two training turns.",
+  candidates:historicalCandidates,
+  counts:Object.fromEntries(codes.map(code=>[
+    code,historicalCandidates.filter(x=>x.code===code).length
+  ]))
+};
+console.log("Pre-1997 retrospective candle suggestions:",JSON.stringify(historicalBackcast.counts),
+  "total",historicalCandidates.length);
+
 const latestMatches=Object.fromEntries(codes.map(code=>[
   code,(summary[code].leaders||[]).slice(0,10).filter(x=>x.lastBarMatch)
     .map(x=>({id:x.id,name:x.name,train:x.train,test:x.test}))
 ]));
 const payload={
-  symbol:"SPX",version:"2026-11-23-multidecade-v2",asOf:long.asOf,
+  symbol:"SPX",version:"2026-11-23-historical-backcast-v3",asOf:long.asOf,
   barCount:N,dateStart:daily[0].time,dateEnd:daily.at(-1).time,
   studyStart:TRAIN_START,splitDate:TEST_START,
   trainCount,testCount,leadSessions:forward,embargoSessions:forward,
   candidatesGenerated:candidates.length,atomicCount:atomic.length,
   labels:codes,counts:turns.counts,analysis:summary,latestMatches,signals:selectedSignals,
+  historicalBackcast,
   selectedEvents:codes.map(code=>({code,dates:labeled[code]})),
   excludedEarlyWicks:"OHLC flat observations excluded; study begins 1997 with reliable high/low records.",
   caution:"Thousands of correlated patterns fit to user-defined turning points; descriptive holdout counts are not calibrated probabilities or trading evidence."
