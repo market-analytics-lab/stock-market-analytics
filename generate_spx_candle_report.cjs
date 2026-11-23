@@ -208,11 +208,17 @@ for(const code of codes){
     continue;
   }
   const ranked=[];
+  // With just two earlier RH/RL bear markets, show only patterns covering
+  // BOTH examples. These are descriptive case comparisons, not meaningful
+  // statistical training or calibrated forecasts. Later examples remain held out.
+  const verySmallSample=labelsInTraining<3;
+  const minimumCovered=verySmallSample?2:3;
+  const minimumHits=verySmallSample?2:4;
   for(const c of candidates){
     const tr=masks(c,trainMask,targetMasks[code]);
-    if(tr.fired<20||tr.fired>trainCount*.55||tr.hits<4)continue;
+    if(tr.fired<20||tr.fired>trainCount*.55||tr.hits<minimumHits)continue;
     const unique=coverage(c,code,trainMask);
-    if(unique<3)continue;
+    if(unique<minimumCovered)continue;
     const n=tr.fired,pt=tr.hits/n,z=1.96;
     const lower=(pt+z*z/(2*n)-z*Math.sqrt((pt*(1-pt)+z*z/(4*n))/n))/(1+z*z/n);
     const score=(lower-baseline)*Math.sqrt(unique);
@@ -234,14 +240,15 @@ for(const code of codes){
     if(!selectedSignals[c.id])selectedSignals[c.id]=candidateSignals(c);
   }
   summary[code]={leaders,baseline:baseRates,
-    status:leaders.length?"research":"insufficient-pattern-support"};
+    status:leaders.length?(verySmallSample?"very-small-sample":"research"):
+      "insufficient-pattern-support"};
 }
 const latestMatches=Object.fromEntries(codes.map(code=>[
   code,(summary[code].leaders||[]).slice(0,10).filter(x=>x.lastBarMatch)
     .map(x=>({id:x.id,name:x.name,train:x.train,test:x.test}))
 ]));
 const payload={
-  symbol:"SPX",version:"2026-11-23-multidecade-v1",asOf:long.asOf,
+  symbol:"SPX",version:"2026-11-23-multidecade-v2",asOf:long.asOf,
   barCount:N,dateStart:daily[0].time,dateEnd:daily.at(-1).time,
   studyStart:TRAIN_START,splitDate:TEST_START,
   trainCount,testCount,leadSessions:forward,embargoSessions:forward,
