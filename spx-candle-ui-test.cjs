@@ -34,7 +34,10 @@ for(const id of [
   "candle-label-undo","candle-label-copy","candle-label-output",
   "candle-label-status","candle-label-summary",
   "candle-backcast-toggle","candle-backcast-filter",
-  "candle-backcast-count","candle-view-pre97"
+  "candle-backcast-count","candle-view-pre97",
+  "candle-backcast-engine","candle-expanded-recent-toggle",
+  "candle-expanded-recent-count","candle-latest-jl",
+  "candle-expanded-summary","candle-expanded-table"
 ])element(id);
 const targets=["dH","dL","JH","JL","RH","RL"].map(code=>{
   const node=element("target-"+code);
@@ -48,6 +51,7 @@ elements.get("candle-explorer").querySelectorAll=query=>
   query.includes("data-candle-target")?targets:ranges;
 elements.get("candle-label-type").value="RH";
 elements.get("candle-backcast-filter").value="core";
+elements.get("candle-backcast-engine").value="expanded";
 
 const initialLocal=[
   {date:"2000-03-24",code:"RH"},
@@ -97,6 +101,7 @@ for(const file of [
   "spx-long-ohlc.js",
   "spx-turning-points.js",
   "spx-candle-report.js",
+  "spx-candle-advanced-data.js",
   "spx-candle-miner.js",
   "spx-candle-explorer.js"
 ]){
@@ -122,35 +127,58 @@ assert.equal(currentMarkers.filter(m=>m.time==="2000-03-24").length,1);
 assert.equal(currentMarkers.find(m=>m.time==="2000-03-24").text,"RH");
 assert.equal(currentMarkers.find(m=>m.time==="2023-01-03").text,"dH*");
 assert(ctx.window.SPX_CANDLE_PATTERNS.historicalBackcast.candidates.length>20);
+const advanced=ctx.window.SPX_CANDLE_PATTERNS.advanced;
+assert(advanced && advanced.featureCount>=1000);
+assert(get("candle-expanded-summary").textContent.includes("automatic candle features"));
+assert(get("candle-latest-jl").children.some(n=>n.textContent.includes(
+  advanced.latestJL.lastConfirmedJL)));
+const backcastEngine=get("candle-backcast-engine");
+assert.equal(backcastEngine.value,"expanded");
 const backcastToggle=get("candle-backcast-toggle");
 const filter=get("candle-backcast-filter");
 assert.equal(currentMarkers.filter(m=>m.text.endsWith("?")).length,0,
   "Guess markers must be OFF by default");
 backcastToggle.events.click({currentTarget:backcastToggle});
 unique();
-const rawCandidates=ctx.window.SPX_CANDLE_PATTERNS.historicalBackcast.candidates;
+const rawCandidates=advanced.pastSuggestions;
 const normal=rawCandidates.filter(m=>["dH","dL","JH","JL"].includes(m.code)).length;
 assert.equal(currentMarkers.filter(m=>m.text.endsWith("?")).length,normal);
 assert.equal(currentMarkers.length,176+normal);
 assert(currentMarkers.filter(m=>m.text.endsWith("?")).every(m=>
   m.time<"1997-01-01"&&m.time>="1962-01-02"&&m.shape==="circle"));
 assert(currentMarkers.every(m=>!m.text.endsWith("?")||m.time<"1997-01-01"));
+// Switch to original independent engine without losing the on/off state.
+backcastEngine.value="original";
+backcastEngine.events.change({currentTarget:backcastEngine});
+unique();
+assert.equal(currentMarkers.filter(m=>m.text.endsWith("?")).length,
+  ctx.window.SPX_CANDLE_PATTERNS.historicalBackcast.candidates
+  .filter(x=>["dH","dL","JH","JL"].includes(x.code)).length);
 filter.value="RH";
 filter.events.change({currentTarget:filter});
 unique();
 assert.equal(currentMarkers.filter(m=>m.text==="RH?").length,
-  rawCandidates.filter(m=>m.code==="RH").length);
+  ctx.window.SPX_CANDLE_PATTERNS.historicalBackcast.candidates.filter(m=>m.code==="RH").length);
 assert(currentMarkers.filter(m=>m.text.endsWith("?")).every(m=>m.text==="RH?"));
 filter.value="all";
 filter.events.change({currentTarget:filter});
 unique();
 assert.equal(currentMarkers.filter(m=>m.text.endsWith("?")).length,
-  rawCandidates.length,"All-six filter should include each earlier research class");
+  ctx.window.SPX_CANDLE_PATTERNS.historicalBackcast.candidates.length,"Original all-six filter includes bear-market exploratory classes");
 backcastToggle.events.click({currentTarget:backcastToggle});
 unique();
 assert.equal(currentMarkers.filter(m=>m.text.endsWith("?")).length,0);
 assert.equal(currentMarkers.length,176);
 
+const recentToggle=get("candle-expanded-recent-toggle");
+assert.equal(currentMarkers.filter(m=>m.text.endsWith("~")).length,0);
+recentToggle.events.click({currentTarget:recentToggle});
+unique();
+assert.equal(currentMarkers.filter(m=>m.text.endsWith("~")).length,
+  advanced.recentSuggestions.filter(x=>!ctx.window.SPX_TURNING.points.some(y=>y.date===x.date)).length);
+recentToggle.events.click({currentTarget:recentToggle});
+unique();
+assert.equal(currentMarkers.filter(m=>m.text.endsWith("~")).length,0);
 const on=get("candle-label-toggle");
 on.events.click({currentTarget:on});
 chartClick({time:"2000-03-24"});
