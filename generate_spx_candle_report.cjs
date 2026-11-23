@@ -19,7 +19,7 @@ const vm=require("node:vm");
 const assert=require("node:assert/strict");
 
 const sandbox=vm.createContext({window:{}});
-for(const file of ["spx-long-ohlc.js","spx-turning-points.js"]){
+for(const file of [process.env.SPX_LONG_OHLC_INPUT||"spx-long-ohlc.js","spx-turning-points.js"]){
   vm.runInContext(fs.readFileSync(file,"utf8"),sandbox,{filename:file,timeout:30000});
 }
 const long=sandbox.window.SPX_LONG_OHLC;
@@ -255,7 +255,7 @@ const scriptBody="/* Precomputed real daily SPX candle discovery, 1997+.\n"+
   " * Training pre-2019; holdout 2019-present; labels may be subjective.\n"+
   " * Generated reproducibly via node generate_spx_candle_report.cjs.\n"+
   " */\nwindow.SPX_CANDLE_REPORT = "+JSON.stringify(payload)+";\n";
-const path="spx-candle-report.js";
+const path=process.env.SPX_CANDLE_REPORT_OUTPUT||"spx-candle-report.js";
 if(fs.existsSync(path)&&fs.readFileSync(path,"utf8")===scriptBody){
   console.log("SPX pattern report unchanged:",payload.asOf);
 }else{
