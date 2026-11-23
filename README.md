@@ -64,9 +64,15 @@ The **Latest JL** readout on the second chart separates:
 
 These dates are updated from the generated SPX model after the existing 3:30 PM America/Chicago daily refresh. **A setup is not a known future JL date**; its trigger date only suggests a possibility one to three subsequent trading sessions later. No future date is falsely marked as a confirmed JL.
 
+### Delayed price-confirmed JL-like low dates
+
+In addition to model-only `JL~` candlestick *setup dates*, the second chart now includes a separate **price-confirmation heuristic**. A `JL◇` circle can appear only after a candle is the **lowest close over 65 sessions**, a local closing-price low relative to the preceding and following five sessions, and a **4% rebound within the next 15 sessions**. This is an automatically flagged **JL-like pivot candidate, not the user's confirmed JL class**. Its date is backdated to the observed low, but the report also displays **the later date when confirmation first became available**. It updates only after a valid price rebound, never before.
+
+For the last user-confirmed JL on **March 30, 2026**, the first matching price confirmation occurred **April 7, 2026**. A historical heuristic can miss genuine labeled JLs and can also flag irrelevant intermediate lows; do not interpret these as proof of the next market bottom. The new toggle **Recent expanded-model setups** displays both the `JL~` trigger dates and any `JL◇` delayed price pivots; both remain off by default.
+
 ### Historical and recent marker toggles
 
-The **Show model guesses** historical overlay can choose **Expanded candle recognition** (new default) or **Original pattern recognition**, and filter by label. The expanded default uses fewer rule-consensus candidates in 1962–1996; the original older scan is still available. The optional **Recent expanded-model setups** toggle shows distinct `dH~`, `dL~`, `JH~`, `JL~` circles on 2025+ historical candles, without overwriting confirmed arrows or browser labels. Both overlays are off by default.
+The **Show model guesses** historical overlay can choose **Expanded candle recognition** (new default) or **Original pattern recognition**, and filter by label. The expanded default uses fewer rule-consensus candidates in 1962–1996; the original older scan is still available. The optional **Recent expanded-model setups** toggle shows distinct `dH~`, `dL~`, `JH~`, `JL~` rule-trigger circles and delayed `JL◇` price-pivot circles on 2025+ historical candles, without overwriting confirmed arrows or browser labels. Both overlays are off by default.
 
 Tests: `node spx-candle-advanced-test.cjs` checks reproducibility and verifies that changing 2019+ prices cannot change the rules selected using 1997–2018, while `node spx-candle-ui-test.cjs` checks control behavior and one marker per day.
 
