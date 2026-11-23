@@ -104,7 +104,8 @@ for(const file of [
 const unique=()=>{
   const dates=currentMarkers.map(m=>m.time);
   assert.equal(new Set(dates).size,dates.length,"Duplicate chart flags on a trading day");
-  assert.deepEqual([...dates].sort(),dates,"Flag positions must be sorted chronologically");
+  for(let i=1;i<dates.length;i++)
+    assert(dates[i-1]<dates[i],"Flag positions must be strictly increasing");
 };
 const get=id=>elements.get(id);
 unique();
