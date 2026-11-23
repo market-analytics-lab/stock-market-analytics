@@ -24,7 +24,25 @@ assert.deepEqual(JSON.parse(JSON.stringify(labels.counts)),{dH:63,dL:63,JH:22,JL
 assert(labels.points.every((p,i)=>i===0||labels.points[i-1].date<=p.date));
 const dates=new Set(history.daily.map(row=>row[0]));
 assert(labels.points.every(p=>dates.has(p.date)),"Every historic user label must correspond to a real SPX daily session");
-assert.equal(report.dateStart,"1996-10-01");
+assert.equal(report.dateStart,"1962-01-02");
+assert.equal(report.historicalBackcast.start,"1962-01-02");
+assert.equal(report.historicalBackcast.end,"1996-12-31");
+assert.equal(report.historicalBackcast.noNewTrainingLabels,true);
+assert.equal(report.historicalBackcast.sourceRulesFrom,"1997–2018 labeled-data discovery");
+assert(report.historicalBackcast.candidates.length>20);
+assert(report.historicalBackcast.candidates.length<1200,"Historical suggestions should be deduplicated for readability");
+const historicalMarkerDates=new Set();
+const historyRows=new Map(history.daily.map(row=>[row[0],row]));
+for(const p of report.historicalBackcast.candidates){
+  assert(p.date>="1962-01-02"&&p.date<"1997-01-01");
+  assert(!historicalMarkerDates.has(p.date),"Duplicate historical model marker");
+  historicalMarkerDates.add(p.date);
+  assert(["dH","dL","JH","JL","RH","RL"].includes(p.code));
+  assert(p.votes>=report.historicalBackcast.minimumAgreeingRules[p.code]);
+  assert(p.votes<=p.outOf);
+  assert(historyRows.has(p.date),"Model suggested date without authentic SPX data");
+}
+
 assert.equal(report.splitDate,"2019-01-01");
 assert(report.candidatesGenerated>30000);
 assert(report.trainCount>5000&&report.testCount>1500);
@@ -81,6 +99,9 @@ try {
   const tampered=path.join(temp,"altered-history.js");
   fs.writeFileSync(tampered,"window.SPX_LONG_OHLC = "+JSON.stringify(changed)+";\n");
   const altered=run(tampered,path.join(temp,"modified.js"));
+  assert.deepEqual(altered.historicalBackcast,regenerated.historicalBackcast,
+    "Changing future 2019+ OHLC must not alter fixed-rule historical backcasts");
+
   for(const code of ["dH","dL","JH","JL"]) {
     const before=regenerated.analysis[code].leaders;
     const after=altered.analysis[code].leaders;
@@ -97,7 +118,7 @@ try {
 }finally{
   fs.rmSync(temp,{recursive:true,force:true});
 }
-console.log("SPX candlestick research passed:",
+console.log("SPX candlestick research + pre-1997 backcast passed:",
   report.candidatesGenerated,"rules; 159 labeled turning points; training",
   report.trainCount,"sessions, holdout",report.testCount,
   "; RH/RL flagged as tiny samples; no future-data leakage.");
