@@ -39,9 +39,21 @@ The separate [SPX Candlestick Pattern Explorer](https://market-analytics-lab.git
 4. Repeat as needed. Your starred labels appear on the chart and in the date list. They are saved **locally in the current browser**, not automatically uploaded to GitHub.
 5. Click **Copy my dates** and paste the *dates* into your ChatGPT conversation to add them to the permanent model and analyze the older turning-point examples. There is no code to copy or install.
 
+### Toggleable historical model guesses — **1962–1996**
+
+The second chart now has a separate **Show model guesses: On/Off** control. It plots **retrospective pattern hypotheses** on genuine daily SPX observations between February 1962 and December 1996, **before any of the supplied 1997+ user labels**. Enabling the control navigates to 1987–1996 by default; the **View 1987–96** shortcut and **Jump to Date** input allow exploration of other years. The companion category filter can show dH, dL, JH, JL, RH, RL, all six, or the default **four moderate/major classes without the very small-sample bear classes**.
+
+- Each proposed location is a **colored circle with a question mark**, such as `JL?` or `dH?`. It represents the **pattern trigger date**, *not* an observed, verified market high/low. The pattern's research target was an actual user-labeled close **one to three following trading sessions later**.
+- Training/ranking rules are frozen using the 1997–2018 labels; the same rule functions are applied **backward** to daily 1962–1996 OHLC. Early OHLC with zero range and its surrounding seven-session context are excluded. This is **not** an out-of-sample test: the older dates precede the data used to choose these rules.
+- For each label, the eight best earlier-trained candidate rules contribute votes. Five of eight votes (six of eight for RH/RL) are required before the fixed cooldown suppresses nearby overlaps. Correlated patterns can vote together; **vote count is not a probability**.
+- Initial 2026-11-23 research archive: **380 total pre-1997 candidates** (dH 13, dL 163, JH 25, JL 90, RH 87, RL 2). **291** in the default dH/dL/JH/JL display. These counts are heavily skewed toward lows and must **not** be interpreted as established high/low turning points.
+- Confirmed user turning-point arrows, browser-saved `*` annotations, and pre-1997 model guesses are rendered **at most once per trading day**, in that priority order. Selected individual pattern dots remain a separate toggle. Model guesses start **off** and never become permanent user annotations without deliberate labeling and sharing.
+
+Use these candidate circles as suggested places to **inspect and manually label**, not as factual extrema or trade signals. In particular, the RH/RL rules are based on just two pre-2019 market cycles.
+
 ### Pattern model limitations and controls
 
-The candlestick miner is **now rebuilt on 7,584 real SPX daily records covering 1996–2026**. Its first 1997 research labels came from the two collections of 162 user-supplied historical dates. Those records were added to the prior 13 labels, producing **175 distinct labeled SPX turning points** across six categories:
+The candlestick research archive now evaluates real SPX daily OHLC from **1962–2026**, with its supervised labeled discovery and holdout samples confined to **1997–2026**. Its first 1997 research labels came from the two collections of 162 user-supplied historical dates. Those records were added to the prior 13 labels, producing **175 distinct labeled SPX turning points** across six categories:
 
 | Label | Interpretation | User-supplied examples |
 |---|---|---:|
@@ -66,7 +78,7 @@ The chart displays each target's actual top-ranked candlestick rules, earlier tr
 
 "Winning sessions" count pattern days that preceded **a user-labeled event in one of the next three trading days**. Multiple winning sessions can refer to the same future turn; distinct turning points covered are separately reported. Tens of thousands of hypothesis combinations imply substantial overfitting risk, and no pattern here has a demonstrated real-time trading edge.
 
-The second chart supports one selected purple training/holdout pattern overlay at a time, colored arrows for all 175 unique historical user labels, zoom, crosshair, logarithmic scale, and 1957+ date navigation. No 1871 monthly observations are treated as daily candlesticks; close-only/flat older bars are excluded from wick-based mining.
+The second chart supports an independently switchable pre-1997 guess overlay, one selected purple training/holdout pattern overlay at a time, colored arrows for all 175 unique historical user labels, zoom, crosshair, logarithmic scale, and 1957+ date navigation. No 1871 monthly observations are treated as daily candlesticks; close-only/flat older bars are excluded from wick-based mining.
 
 **No model here has a validated trading edge.** The number of searched hypotheses is enormous relative to labeled turning points. A historical training winner is not a forecast, and the holdout is intended to reveal failures as well as successes.
 
