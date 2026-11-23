@@ -191,7 +191,7 @@
     leadSessions:horizon,candidatesGenerated:candidates.length,atomicCount:atomic.length,
     labels,analysis,baseRates,signals,
     selectedEvents:labels.map(code=>({code,
-      dates:[...labelDates[code]].filter(d=>dateIndex.has(d))})),
+      dates:[...labelDates[code]]})),
     latestMatches:Object.fromEntries(labels.map(code=>[code,analysis[code].leaders
       .slice(0,10).filter(x=>x.lastBarMatch).map(x=>({id:x.id,name:x.name,
         train:x.train,test:x.test}))])),
