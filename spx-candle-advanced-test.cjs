@@ -41,6 +41,14 @@ assert(study.latestJL.lastModelJLTrigger===null ||
   realDates.has(study.latestJL.lastModelJLTrigger));
 assert(study.latestJL.currentJLRuleMatches>=0);
 assert(study.latestJL.currentJLRuleMatches<=7);
+for(const x of study.automaticJLPricePivots||[]){
+  assert(realDates.has(x.pivotDate)&&realDates.has(x.knownAfter));
+  assert(x.pivotDate<x.knownAfter);
+  assert(x.rebound>=.04);
+}
+assert(!study.latestJL.lastAlgorithmicPricePivot ||
+  study.latestJL.lastAlgorithmicPricePivot.pivotDate<
+  study.latestJL.lastAlgorithmicPricePivot.knownAfter);
 assert(study.latestJL.calendarWatch.earliest<study.latestJL.calendarWatch.latest);
 const temp=fs.mkdtempSync(path.join(os.tmpdir(),"spx-advanced-"));
 try{
