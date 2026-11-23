@@ -176,6 +176,15 @@
     // Separate optional recent model signals. "~" indicates a historical
     // date when a JL-like precursor pattern FIRED, not a confirmed low.
     if(showRecentExpanded&&advanced){
+      // JL◇ is a retrospective five-day low + rebound confirmation.
+      // It is distinct from the earlier model-only JL~ pattern trigger.
+      for(const pivot of advanced.automaticJLPricePivots||[]){
+        if(!byDate.has(pivot.pivotDate)||uniqueByDay.has(pivot.pivotDate))continue;
+        uniqueByDay.set(pivot.pivotDate,{
+          time:pivot.pivotDate,position:"belowBar",color:"#c0b0ff",
+          shape:"circle",text:"JL◇",size:1
+        });
+      }
       for(const suggestion of advanced.recentSuggestions){
         if(!byDate.has(suggestion.date)||uniqueByDay.has(suggestion.date))continue;
         const type=suggestion.code;
@@ -282,8 +291,10 @@
     if(!status)return;
     if(!advanced){status.textContent="Expanded model unavailable or out of date.";return;}
     const n=advanced.recentSuggestions.length;
+    const auto=(advanced.automaticJLPricePivots||[]).length;
     status.textContent=(showRecentExpanded?"Visible":"Hidden")+" · "+n+
-      " model-only setup dates since 2025; circles use ~, never confirmed JL labels.";
+      " speculative setup dates plus "+auto+
+      " delayed algorithmic price pivots since 2025; ~ and ◇ are NOT confirmed JL labels.";
   }
   function renderAdvanced(){
     const output=get("candle-expanded-summary");
@@ -348,6 +359,12 @@
       info.appendChild(node("small","",jl.status+" as of "+jl.mostRecentBar+
         ". Latest candle matched "+jl.currentJLRuleMatches+"/"+jl.minimumVotes+
         " required voting rules. "+signalState+"."));
+      const pricePivot=jl.lastAlgorithmicPricePivot;
+      info.appendChild(node("small","",pricePivot
+        ?"Last ALGORITHMIC JL-like price pivot: "+pricePivot.pivotDate+
+          " (recognizable only on/after "+pricePivot.knownAfter+
+          " following a five-session price low and 4% rebound). This is NOT a user-confirmed JL."
+        :"No automatically price-confirmed JL-like low is available."));
       info.appendChild(node("small","","Independent legacy timing watch: "+
         jl.calendarWatch.earliest+" through "+jl.calendarWatch.latest+
         " after the October 6 JH. This is a hypothesis, not an established major-low date."));
